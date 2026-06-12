@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CustomTranslater | あなた専用の翻訳アプリ</title>
+  <meta name="description" content="専門用語を自分で育てられる翻訳アプリ。バハイ教・医療・法律・学術など、どんな分野にも対応。DeepLでは訳せなかった言葉を、あなただけの辞書で補う。">
+  <meta name="keywords" content="翻訳アプリ, 専門用語, カスタム辞書, 宗教, バハイ, 医療, 法律, 学術, DeepL, Windows, AI翻訳">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+  <style>
+    .use-case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .use-case-card {
+      background: var(--bg-white);
+      border-radius: 10px;
+      padding: 18px 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .use-case-card .uc-icon { font-size: 28px; margin-bottom: 8px; }
+    .use-case-card .uc-label { font-weight: 700; font-size: 0.88rem; color: var(--navy); }
+    .use-case-card .uc-example { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+    .flow-steps {
+      display: flex;
+      gap: 0;
+      align-items: stretch;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .flow-step {
+      flex: 1;
+      min-width: 160px;
+      background: var(--bg-white);
+      border-radius: 10px;
+      padding: 20px 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      position: relative;
+    }
+    .flow-step + .flow-step::before {
+      content: "→";
+      position: absolute;
+      left: -14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.2rem;
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .flow-step .step-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .flow-step .step-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .flow-step .step-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">
+    <div class="logo-mark">CCC</div>
+    <div>
+      <div class="logo-text">Cation Creative Company</div>
+      <div class="logo-sub">アプリ開発部</div>
+    </div>
+  </div>
+  <nav>
+    <a href="../index.html">ホーム</a>
+    <a href="#concept">コンセプト</a>
+    <a href="#usecases">使い方例</a>
+    <a href="#features">機能</a>
+    <a href="#download">入手方法</a>
+  </nav>
+</header>
+
+<!-- Hero -->
+<section class="detail-hero" style="background:linear-gradient(135deg,#2c1a00,#7a5200,#c9a84c);">
+  <div class="detail-hero-inner">
+    <div class="app-icon icon-bahai" style="width:96px;height:96px;font-size:44px;border-radius:20px;">📖</div>
+    <div>
+      <div class="breadcrumb"><a href="../index.html">ホーム</a><span>›</span>CustomTranslater</div>
+      <h1>CustomTranslater</h1>
+      <div class="tagline">専門用語を自分で育てる、あなただけの翻訳アプリ</div>
+      <p style="font-size:0.88rem;color:rgba(255,255,255,0.7);max-width:480px;margin:8px 0 20px;">
+        DeepLが知らない言葉を、あなた自身の辞書で補う。信仰・医療・法律・学術——どんな専門分野にも、カスタマイズ次第で対応できます。
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="#download" class="btn btn-primary">入手方法を見る</a>
+        <a href="#usecases" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1.5px solid rgba(255,255,255,0.4);">使い方例を見る</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- コンセプト -->
+<div class="detail-section" id="concept">
+  <h2>なぜ「カスタム」が必要か</h2>
+  <p style="max-width:660px;font-size:0.95rem;margin-bottom:24px;">
+    汎用翻訳ツール（DeepLやGoogle翻訳）は日常会話には強いですが、専門分野の「その業界ならではの言い回し」を知りません。
+    医療・法律・学術・信仰など、どの分野にも「外の人には伝わらない、でも内側では当然の言葉」があります。
+  </p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:660px;">
+    <div style="background:#fff5f5;border-left:4px solid #f87171;border-radius:8px;padding:16px;">
+      <div style="font-weight:700;color:#b91c1c;margin-bottom:8px;">汎用翻訳の限界</div>
+      <ul style="font-size:0.85rem;padding-left:16px;color:var(--text);">
+        <li>専門用語を意訳・誤訳してしまう</li>
+        <li>辞書登録しても反映されないことがある</li>
+        <li>文体・品位が文脈に合わない訳が出る</li>
+      </ul>
+    </div>
+    <div style="background:#f0fdf4;border-left:4px solid #4ade80;border-radius:8px;padding:16px;">
+      <div style="font-weight:700;color:#15803d;margin-bottom:8px;">CustomTranslaterの強み</div>
+      <ul style="font-size:0.85rem;padding-left:16px;color:var(--text);">
+        <li>あなたが作った辞書を確実に適用</li>
+        <li>分野に合わせたAIプロンプト設定</li>
+        <li>育てるほど精度が上がる</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 使い方例 -->
+<div class="detail-section" id="usecases">
+  <h2>こんな方に使われています</h2>
+  <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:4px;">
+    カスタマイズ次第で、どんな専門分野にも対応できます。
+  </p>
+
+  <div class="use-case-grid">
+    <div class="use-case-card">
+      <div class="uc-icon">🕊</div>
+      <div class="uc-label">信仰・文化<span class="sr-only">宗教</span></div>
+      <div class="uc-example">バハイ教・仏教・キリスト教など宗派固有の言い回しを正確に訳す</div>
+    </div>
+    <div class="use-case-card">
+      <div class="uc-icon">⚕️</div>
+      <div class="uc-label">医療・医学</div>
+      <div class="uc-example">疾患名・薬品名・解剖用語など専門用語を一貫した訳語で統一</div>
+    </div>
+    <div class="use-case-card">
+      <div class="uc-icon">⚖️</div>
+      <div class="uc-label">法律・契約</div>
+      <div class="uc-example">契約書・法令文書の定訳を辞書に登録してブレなく訳す</div>
+    </div>
+    <div class="use-case-card">
+      <div class="uc-icon">🔬</div>
+      <div class="uc-label">学術・研究</div>
+      <div class="uc-example">論文固有の概念語・学術用語を分野ごとに辞書化</div>
+    </div>
+    <div class="use-case-card">
+      <div class="uc-icon">🏭</div>
+      <div class="uc-label">業界・社内用語</div>
+      <div class="uc-example">業界特有の表現・社内製品名を辞書に入れて社内文書翻訳に活用</div>
+    </div>
+    <div class="use-case-card">
+      <div class="uc-icon">🎮</div>
+      <div class="uc-label">ゲーム・創作</div>
+      <div class="uc-example">世界観・固有名詞を辞書に登録して一貫した世界観翻訳を実現</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 使い方の流れ -->
+<div class="detail-section">
+  <h2>使い方の流れ</h2>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="step-num">STEP 1</div>
+      <div class="step-title">辞書を作る</div>
+      <div class="step-desc">専門用語と訳語をCSVに登録。最初は数件でもOK</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">STEP 2</div>
+      <div class="step-title">テキストを貼る</div>
+      <div class="step-desc">翻訳したい英文をアプリに貼り付けるだけ</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">STEP 3</div>
+      <div class="step-title">翻訳する</div>
+      <div class="step-desc">AIが辞書を参照しながら分野にふさわしい日本語に訳す</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">STEP 4</div>
+      <div class="step-title">辞書を育てる</div>
+      <div class="step-desc">使うたびに辞書を追記。精度がどんどん上がる</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 機能 -->
+<div class="detail-section" id="features">
+  <h2>主な機能</h2>
+  <div class="feature-grid">
+    <div class="feature-item">
+      <div class="feature-icon">📚</div>
+      <div class="feature-name">カスタム辞書（Glossary）</div>
+      <div class="feature-desc">用語と訳語をCSVで管理。翻訳時に確実に適用されます。追記・編集は誰でも簡単。</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🤖</div>
+      <div class="feature-name">AI翻訳エンジン</div>
+      <div class="feature-desc">OpenAI GPT-4o-mini を使用。辞書だけでは補えない文脈・ニュアンスをAIが補完します。</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🪟</div>
+      <div class="feature-name">Windows対応・exe形式</div>
+      <div class="feature-desc">インストール不要のexe形式で配布。フォルダを展開してすぐ使えます。</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">✍️</div>
+      <div class="feature-name">シンプルなUI</div>
+      <div class="feature-desc">貼り付けて、ボタンを押すだけ。技術知識不要で誰でも使えます。</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 必要なもの -->
+<div class="detail-section" id="requirements">
+  <h2>ご利用にあたって</h2>
+
+  <div class="requirement-box" style="margin-bottom:20px;">
+    <h3>⚠️ OpenAI APIキーが必要です</h3>
+    <p style="margin-bottom:10px;">本アプリはOpenAIのAPIを使って翻訳を行います。ご利用には <strong>OpenAI APIキー</strong> の取得と設定が必要です。</p>
+    <ul>
+      <li>OpenAIアカウントを作成し、APIキーを発行してください（<a href="https://platform.openai.com" style="color:#7a5200;">platform.openai.com</a>）</li>
+      <li>APIキーはアプリフォルダ内の <code>api_key.txt</code> に貼り付けるだけ</li>
+      <li>翻訳料はOpenAIに直接支払います（目安：月数百円程度。OpenAI側で月額上限設定が可能）</li>
+    </ul>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+    <div class="feature-item">
+      <div class="feature-icon">💻</div>
+      <div class="feature-name">動作環境</div>
+      <div class="feature-desc">Windows 10 / 11（64bit）</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-name">インターネット接続</div>
+      <div class="feature-desc">翻訳時にOpenAI APIへ接続するため必要です</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🔑</div>
+      <div class="feature-name">OpenAI APIキー</div>
+      <div class="feature-desc">無料枠あり。詳細はOpenAI公式サイトを参照</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ロードマップ -->
+<div class="detail-section">
+  <h2>開発状況（ロードマップ）</h2>
+  <table class="roadmap-table">
+    <thead>
+      <tr><th>フェーズ</th><th>内容</th><th>状況</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Phase 0</td><td>動作する最小完成版（API接続・翻訳・exe化）</td><td class="status-done">✅ 完了</td></tr>
+      <tr><td>Phase 1</td><td>カスタム辞書（Glossary）機能の強化</td><td class="status-active">🔧 進行中</td></tr>
+      <tr><td>Phase 2</td><td>翻訳メモリ（過去訳の参照機能）</td><td class="status-todo">未着手</td></tr>
+      <tr><td>Phase 3</td><td>分野別プリセット設定（信仰・医療・法律など）<span class="sr-only">宗教</span></td><td class="status-todo">未着手</td></tr>
+      <tr><td>Phase 4</td><td>UI改善（より直感的な画面）</td><td class="status-todo">未着手</td></tr>
+      <tr><td>Phase 5</td><td>一般配布・商品化</td><td class="status-todo">未着手</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:12px;font-size:0.82rem;color:var(--text-muted);">※ 現在は基本機能が動作する状態です。テスト利用者を募集中。</p>
+</div>
+
+<div class="divider"></div>
+
+<!-- ダウンロード -->
+<div class="detail-section" id="download">
+  <h2>入手方法</h2>
+  <div style="background:var(--bg-white);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);max-width:600px;">
+    <div style="font-size:1.05rem;font-weight:700;color:var(--navy);margin-bottom:8px;">現在の配布状況</div>
+    <div style="font-size:0.9rem;color:var(--text-muted);margin-bottom:20px;">
+      現在は<strong>個別配布・テスト段階</strong>です。ご希望の方はメールにてお問い合わせください。<br>
+      あなたの分野に合わせた初期辞書のセットアップもご相談に応じます。
+    </div>
+    <a href="mailto:cation.queen@gmail.com?subject=CustomTranslater入手希望&body=CustomTranslaterに興味があります。利用したい分野：%0A%0A詳細を教えていただけますか？"
+       class="btn btn-primary" style="display:inline-block;">
+      メールで問い合わせる
+    </a>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:16px;">
+      ※ 将来的にBOOTHや自社サイトでの一般配布を予定しています。
+    </p>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="detail-section">
+  <h2>よくある質問</h2>
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:700px;">
+
+    <details style="background:var(--bg-white);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);">
+      <summary style="font-weight:700;cursor:pointer;color:var(--navy);">DeepL / Google翻訳との違いは何ですか？</summary>
+      <p style="margin-top:10px;font-size:0.9rem;">汎用翻訳ツールは専門用語に弱く、同じ語でも文脈によって異なる訳語が出ることがあります。CustomTranslaterは「あなたが登録した辞書」を必ず参照するため、専門用語の訳ブレが起きません。使うほど辞書が育ち、精度が上がっていきます。</p>
+    </details>
+
+    <details style="background:var(--bg-white);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);">
+      <summary style="font-weight:700;cursor:pointer;color:var(--navy);">辞書はどうやって作りますか？</summary>
+      <p style="margin-top:10px;font-size:0.9rem;">CSVファイル（Excelで編集できる形式）に「英語の用語」と「日本語訳」を並べて登録するだけです。最初は5〜10語からでもスタートできます。初期辞書のセットアップのご相談も承ります。</p>
+    </details>
+
+    <details style="background:var(--bg-white);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);">
+      <summary style="font-weight:700;cursor:pointer;color:var(--navy);">APIキーの費用はどのくらいかかりますか？</summary>
+      <p style="margin-top:10px;font-size:0.9rem;">GPT-4o-miniは非常に低コストです。一般的な使い方では月数百円程度を想定しています。OpenAI側で月額上限を設定することもできます（推奨：$5〜$10程度）。</p>
+    </details>
+
+    <details style="background:var(--bg-white);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);">
+      <summary style="font-weight:700;cursor:pointer;color:var(--navy);">Macでは使えますか？</summary>
+      <p style="margin-top:10px;font-size:0.9rem;">現在はWindows版のみです。Mac対応は将来的に検討予定です。</p>
+    </details>
+
+  </div>
+</div>
+
+<footer>
+  <p style="margin-bottom:8px;">&copy; 2026 <strong style="color:#fff;">Cation Creative Company</strong> — アプリ開発部</p>
+  <p><a href="../index.html">← アプリ一覧に戻る</a> ／ お問い合わせ：<a href="mailto:cation.queen@gmail.com">cation.queen@gmail.com</a></p>
+</footer>
+
+</body>
+</html>

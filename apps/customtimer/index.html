@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>CustomTimer — 自分だけのタイマー</title>
+  <meta name="description" content="グループ名とタイマーを自由に組み合わせられる無料Webタイマー。ポモドーロ・スペシャルなどのプリセット搭載。周回カウント・音・バイブ・通知対応。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="header-brand">
+    <span class="mark">CCC</span>
+    <span class="name">CustomTimer</span>
+    <a class="back-link" href="../../index.html">← アプリ一覧</a>
+  </div>
+  <button id="settings-btn">⚙ 設定</button>
+</header>
+
+<!-- 通知許可バナー（全幅） -->
+<div id="notif-banner">
+  🔔 タイマー終了を通知で受け取るには、ここをタップして許可してください
+</div>
+
+<!-- プリセットタブ（全幅） -->
+<div class="preset-tabs-wrapper">
+  <div class="preset-tabs" id="preset-tabs">
+    <!-- JS で生成 -->
+  </div>
+</div>
+
+<!-- Main App -->
+<main>
+
+  <!-- タイマーリング -->
+  <div class="timer-wrapper">
+    <svg class="timer-svg" viewBox="0 0 260 260">
+      <circle class="ring-bg" cx="130" cy="130" r="116"/>
+      <circle id="ring-progress" class="ring-progress" cx="130" cy="130" r="116"/>
+    </svg>
+    <div class="timer-inner">
+      <span id="session-badge" class="session-badge work">作業</span>
+      <div id="timer-time" class="timer-time">25:00</div>
+      <div id="step-indicator" class="round-count" style="display:none;letter-spacing:1px;font-size:11px;"></div>
+      <div id="round-count" class="round-count">開始前</div>
+    </div>
+  </div>
+
+  <!-- コントロール -->
+  <div class="controls">
+    <button id="start-btn">▶ スタート</button>
+    <div class="secondary-controls">
+      <button id="reset-btn" class="sec-btn">↺ リセット</button>
+      <button id="skip-btn" class="sec-btn">⏭ スキップ</button>
+    </div>
+  </div>
+
+  <!-- タイマー一覧パネル -->
+  <div class="timer-list-panel">
+    <button class="timer-list-toggle" id="timer-list-toggle">
+      タイマー一覧
+    </button>
+    <div class="timer-list-body" id="timer-list-body">
+      <!-- JS で生成 -->
+    </div>
+  </div>
+
+</main>
+
+<!-- フッター -->
+<footer>
+  <a href="../../index.html">CCCアプリ一覧</a> ／
+  &copy; 2026 Cation Creative Company
+</footer>
+
+<!-- 設定パネル -->
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-panel">
+    <button class="settings-close" id="settings-close">✕</button>
+    <h2>⚙ 設定</h2>
+
+    <!-- プリセット管理 -->
+    <div class="settings-section">
+      <h3>タイマーグループ</h3>
+      <div class="preset-list" id="preset-list"></div>
+
+      <!-- 編集フォーム -->
+      <div class="preset-form" id="preset-form">
+        <div class="form-row">
+          <label>プリセット名</label>
+          <input id="f-name" type="text" placeholder="例：深作業タイム" maxlength="20">
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>アイコン（絵文字）</label>
+            <input id="f-icon" type="text" placeholder="⏱" maxlength="4">
+          </div>
+          <div class="form-row">
+            <label>カラー</label>
+            <input id="f-color" type="color" value="#e67e22" style="height:38px;padding:2px 4px;">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>タイマー一覧　<small style="font-weight:400;">（時：分：秒）</small></label>
+          <div id="f-timer-list"></div>
+          <button type="button" id="f-add-timer" class="btn-add-timer">＋ タイマーを追加</button>
+        </div>
+        <div class="form-actions">
+          <button class="btn-save" id="form-save">保存</button>
+          <button class="btn-cancel" id="form-cancel">キャンセル</button>
+        </div>
+      </div>
+
+      <button class="btn-add-preset" id="btn-add-preset">＋ グループを追加</button>
+    </div>
+
+    <!-- サウンド -->
+    <div class="settings-section">
+      <h3>終了音</h3>
+      <div class="sound-options">
+        <button class="sound-opt selected" data-sound="beep">ビープ音</button>
+        <button class="sound-opt" data-sound="bell">ベル</button>
+        <button class="sound-opt" data-sound="none">なし</button>
+      </div>
+    </div>
+
+    <!-- 説明 -->
+    <div class="settings-section">
+      <h3>このアプリについて</h3>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;">
+        CustomTimer はグループ名＋タイマー一覧を自由に作れるシーケンスタイマーです。<br>
+        ポモドーロやスペシャルはデフォルトのグループです。時・分・秒単位で何個でも追加できます。<br>
+        設定はブラウザに保存されます。<br><br>
+        <a href="../../index.html" style="color:var(--accent);">CCCアプリ一覧</a> ／
+        お問い合わせ：<a href="mailto:cation.queen@gmail.com" style="color:var(--accent);">cation.queen@gmail.com</a>
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,476 @@
+/* CCC App Store - 共通スタイル */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --navy: #1e3a5f;
+  --navy-light: #2a4f80;
+  --gold: #c9a84c;
+  --gold-light: #e8c96a;
+  --bg: #f5f6f8;
+  --bg-white: #ffffff;
+  --text: #2c2c2c;
+  --text-muted: #6b7280;
+  --border: #e2e6ea;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 6px 24px rgba(0, 0, 0, 0.14);
+  --radius: 12px;
+}
+
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Meiryo", "Yu Gothic UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ===== HEADER ===== */
+header {
+  background: var(--navy);
+  padding: 0 40px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+}
+
+.header-logo .logo-mark {
+  width: 36px;
+  height: 36px;
+  background: var(--gold);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--navy);
+  letter-spacing: -0.5px;
+}
+
+.header-logo .logo-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.header-logo .logo-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+}
+
+nav a {
+  color: rgba(255,255,255,0.8);
+  margin-left: 28px;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+
+nav a:hover {
+  color: var(--gold-light);
+}
+
+/* ===== HERO ===== */
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  color: #fff;
+  padding: 80px 40px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 16px;
+}
+
+.hero h1 span {
+  color: var(--gold-light);
+}
+
+.hero p {
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.75);
+  max-width: 560px;
+  margin: 0 auto 32px;
+}
+
+/* ===== SECTION ===== */
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 64px 40px;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.section-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 36px;
+}
+
+/* ===== APP CARDS ===== */
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.app-card {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.app-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+.app-card.featured {
+  border: 2px solid var(--gold);
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 32px;
+}
+
+.app-card.featured .card-body {
+  flex: 1;
+}
+
+.app-card .badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.badge-available {
+  background: #d4f0df;
+  color: #1a7a40;
+}
+
+.badge-wip {
+  background: #fde8c8;
+  color: #9a5c00;
+}
+
+.badge-featured {
+  background: var(--gold);
+  color: var(--navy);
+}
+
+.app-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.icon-bahai   { background: linear-gradient(135deg, #c9a84c, #8b6914); }
+.icon-movie   { background: linear-gradient(135deg, #3b82f6, #1e40af); }
+.icon-vocal   { background: linear-gradient(135deg, #8b5cf6, #5b21b6); }
+.icon-actoviser { background: linear-gradient(135deg, #10b981, #065f46); }
+
+.app-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.app-tagline {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.app-features {
+  font-size: 0.85rem;
+  color: var(--text);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-features li::before {
+  content: "✓ ";
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  text-align: center;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+}
+
+.btn-primary:hover {
+  background: var(--gold-light);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--navy);
+  color: var(--navy);
+}
+
+.btn-outline:hover {
+  background: var(--navy);
+  color: #fff;
+}
+
+.btn-disabled {
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+/* ===== APP DETAIL PAGE ===== */
+.detail-hero {
+  background: linear-gradient(135deg, #3d2800 0%, #7a5200 50%, #c9a84c 100%);
+  color: #fff;
+  padding: 60px 40px;
+}
+
+.detail-hero-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+
+.detail-hero h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.detail-hero .tagline {
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.8);
+  margin-bottom: 24px;
+}
+
+.detail-section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 40px;
+}
+
+.detail-section h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--navy);
+  border-left: 4px solid var(--gold);
+  padding-left: 12px;
+  margin-bottom: 20px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.feature-item {
+  background: var(--bg-white);
+  border-radius: 10px;
+  padding: 20px 16px;
+  box-shadow: var(--shadow);
+  font-size: 0.88rem;
+}
+
+.feature-item .feature-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.feature-item .feature-name {
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+
+.feature-item .feature-desc {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.requirement-box {
+  background: #fffbea;
+  border: 1px solid #f0d060;
+  border-radius: 10px;
+  padding: 20px 24px;
+  font-size: 0.9rem;
+}
+
+.requirement-box h3 {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #7a5200;
+}
+
+.requirement-box ul {
+  padding-left: 20px;
+  color: var(--text);
+}
+
+.requirement-box li {
+  margin-bottom: 4px;
+}
+
+.roadmap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.roadmap-table th {
+  background: var(--navy);
+  color: #fff;
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.roadmap-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.roadmap-table tr:nth-child(even) td {
+  background: #f8f9fb;
+}
+
+.status-done   { color: #1a7a40; font-weight: 700; }
+.status-active { color: #c07000; font-weight: 700; }
+.status-todo   { color: var(--text-muted); }
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 40px;
+}
+
+/* ===== FOOTER ===== */
+footer {
+  background: var(--navy);
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  padding: 32px 40px;
+  font-size: 0.82rem;
+  margin-top: 48px;
+}
+
+footer a {
+  color: var(--gold-light);
+}
+
+/* ===== BREADCRUMB ===== */
+.breadcrumb {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 20px;
+}
+
+.breadcrumb a {
+  color: rgba(255,255,255,0.7);
+}
+
+.breadcrumb a:hover {
+  color: var(--gold-light);
+}
+
+.breadcrumb span {
+  margin: 0 6px;
+}
+
+/* ===== COMING SOON ===== */
+.coming-soon-card {
+  opacity: 0.7;
+}
+
+.coming-soon-overlay {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(0,0,0,0.03) 8px,
+    rgba(0,0,0,0.03) 16px
+  );
+  border-radius: var(--radius);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 720px) {
+  header { padding: 0 20px; }
+  .hero { padding: 56px 20px; }
+  .hero h1 { font-size: 1.7rem; }
+  .section { padding: 48px 20px; }
+  .app-card.featured { flex-direction: column; }
+  .detail-hero { padding: 40px 20px; }
+  .detail-hero-inner { flex-direction: column; }
+  .detail-section { padding: 32px 20px; }
+  nav { display: none; }
+}
