@@ -54,8 +54,12 @@ const DEFAULT_GROUPS = [
   },
 ];
 
-const SOUND_KEY = 'ct_sound';
-const GROUP_KEY = 'ct_groups';
+const SOUND_KEY     = 'ct_sound';
+const VOLUME_KEY    = 'ct_volume';
+const GROUP_KEY     = 'ct_groups';
+const SHOWCLOCK_KEY = 'ct_showclock';
+const START_KEY     = 'ct_start';
+const END_KEY       = 'ct_end';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const state = {
@@ -69,7 +73,22 @@ const state = {
   targetMs: null,
   tick: null,
   sound: 'beep',
+  volume: 0.8,
   editingId: null,
+
+  // ── スケジュール（時計ベース）関連 ──
+  showClock: true,    // タイマー一覧に時刻を表示
+  startStr: '',       // 開始時間 "9:00" / "25:00"（空=なし）
+  endStr: '',         // 終了時間（空=なし）
+  started: false,     // 実行開始済み（一時停止中も true）
+  waiting: false,     // 開始時間待ち
+  finished: false,    // 終了時間に到達して終了
+  pausedAtMs: null,   // 一時停止した時刻
+  shiftMs: 0,         // スケジュール全体のずらし量（再開モードB / スキップ）
+  runStartMs: null,   // 実行開始した時刻（終了時間のみ設定時のアンカー）
+  segStartMs: null,   // 現在パートの開始時刻（絶対）
+  segEndMs: null,     // 現在パートの終了時刻（絶対）
+  segTruncated: false,// 終了時間で短縮された最終パートか
 };
 
 // ── AUDIO ─────────────────────────────────────────────────────────────────────
@@ -82,13 +101,14 @@ function getAudioCtx() {
 
 function playBeep() {
   const ctx = getAudioCtx();
+  const vol = state.volume;
   [880, 1100].forEach((freq, i) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.frequency.value = freq;
     const t = ctx.currentTime + i * 0.25;
-    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.setValueAtTime(0.25 * vol, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
     osc.start(t); osc.stop(t + 0.4);
   });
@@ -96,6 +116,7 @@ function playBeep() {
 
 function playBell() {
   const ctx = getAudioCtx();
+  const vol = state.volume;
   [523, 659, 784, 1047].forEach((freq, i) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -103,7 +124,7 @@ function playBell() {
     osc.connect(gain); gain.connect(ctx.destination);
     osc.frequency.value = freq;
     const t = ctx.currentTime + i * 0.12;
-    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.setValueAtTime(0.2 * vol, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
     osc.start(t); osc.stop(t + 1.2);
   });
@@ -183,12 +204,25 @@ function getCurrentTimer() {
   return g.timers[Math.min(state.timerIdx, g.timers.length - 1)];
 }
 
+function cycleSec(g) {
+  return g.timers.reduce((s, t) => s + t.sec, 0);
+}
+
 function resetToGroup(id) {
   const g = getGroup(id);
-  state.currentId = id;
-  state.timerIdx  = 0;
-  state.round     = 0;
-  state.isRunning = false;
+  state.currentId    = id;
+  state.timerIdx     = 0;
+  state.round        = 0;
+  state.isRunning    = false;
+  state.started      = false;
+  state.waiting      = false;
+  state.finished     = false;
+  state.pausedAtMs   = null;
+  state.shiftMs      = 0;
+  state.runStartMs   = null;
+  state.segStartMs   = null;
+  state.segEndMs     = null;
+  state.segTruncated = false;
   if (state.tick) { clearInterval(state.tick); state.tick = null; }
   state.totalMs    = g.timers[0].sec * 1000;
   state.timeLeftMs = state.totalMs;
@@ -216,12 +250,147 @@ function fmtSec(sec) {
   return parts.join('');
 }
 
+// 絶対時刻 → "H:MM"（実際の時計表記。25:00 入力でも翌日1:00として表示）
+function fmtClock(ms) {
+  const d = new Date(ms);
+  return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// ── SCHEDULE HELPERS ──────────────────────────────────────────────────────────
+// "9:00" / "25:30" → 本日0時を基準にした絶対ms（時は24以上で翌日扱い）。無効なら null
+function clockToMs(str) {
+  if (!str) return null;
+  const m = String(str).trim().match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!m) return null;
+  const h  = parseInt(m[1], 10);
+  const mi = parseInt(m[2], 10);
+  if (mi > 59) return null;
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  return base.getTime() + (h * 3600 + mi * 60) * 1000;
+}
+
+function effectiveEndMs() {
+  const e = clockToMs(state.endStr);
+  return e === null ? null : e + state.shiftMs;
+}
+
+// 開始/終了どちらかが設定されていればスケジュールモード
+function isScheduled() {
+  return clockToMs(state.startStr) !== null || clockToMs(state.endStr) !== null;
+}
+
+// 現在時刻 now がスケジュール上のどのパートに当たるか
+function locateSegment(now) {
+  const g        = getGroup(state.currentId);
+  const startClk = clockToMs(state.startStr);
+  const endMs    = effectiveEndMs();
+  const anchor   = (startClk !== null) ? startClk + state.shiftMs
+                                       : (state.runStartMs || now) + state.shiftMs;
+  let cursor = anchor, i = 0, round = 0;
+  for (let n = 0; n < 5000; n++) {
+    let dur    = g.timers[i].sec * 1000;
+    let segEnd = cursor + dur;
+    let truncated = false;
+    if (endMs !== null && segEnd >= endMs) { segEnd = endMs; truncated = true; }
+    if (now < segEnd) {
+      const segStart = cursor;
+      return {
+        i, round, segStartMs: segStart, segEndMs: segEnd, truncated,
+        remainingMs: Math.max(0, segEnd - Math.max(now, segStart)),
+        finished: false,
+      };
+    }
+    if (truncated) return { finished: true };
+    cursor = segEnd; i++;
+    if (i >= g.timers.length) { i = 0; round++; }
+  }
+  return { finished: true };
+}
+
+// タイマー一覧の各行が始まる時計時刻を求めるための、現在ラウンド先頭の絶対時刻
+function getRoundAnchorMs() {
+  const g        = getGroup(state.currentId);
+  const startClk = clockToMs(state.startStr);
+  if (startClk !== null) {
+    return startClk + state.shiftMs + state.round * cycleSec(g) * 1000;
+  }
+  const segStart = state.segStartMs != null ? state.segStartMs : Date.now();
+  let before = 0;
+  for (let k = 0; k < state.timerIdx; k++) before += g.timers[k].sec * 1000;
+  return segStart - before;
+}
+
+function rowClockMs(i) {
+  const g = getGroup(state.currentId);
+  let before = 0;
+  for (let k = 0; k < i; k++) before += g.timers[k].sec * 1000;
+  return getRoundAnchorMs() + before;
+}
+
 // ── TIMER LOGIC ───────────────────────────────────────────────────────────────
-function startTimer() {
-  if (state.isRunning) return;
-  state.isRunning = true;
-  state.targetMs  = Date.now() + state.timeLeftMs;
-  state.tick      = setInterval(onTick, 250);
+function onStartButton() {
+  if (state.waiting)  { resetTimer(); return; }          // 待機中止
+  if (state.isRunning){ pauseTimer(); return; }
+  if (state.finished) { resetTimer(); return; }          // もう一度
+  if (state.started && state.pausedAtMs != null) {        // 再開
+    if (isScheduled()) { openResumeDialog(); return; }
+    resumeShift();
+    return;
+  }
+  beginRun();
+}
+
+function beginRun() {
+  state.started    = true;
+  state.finished   = false;
+  state.waiting    = false;
+  state.shiftMs    = 0;
+  state.runStartMs = Date.now();
+
+  const startClk = clockToMs(state.startStr);
+  if (startClk !== null && Date.now() < startClk) {
+    // A①：開始時間より前 → 待機
+    state.waiting   = true;
+    state.isRunning = false;
+    state.targetMs  = startClk;
+    state.tick      = setInterval(onWaitTick, 250);
+    render();
+    return;
+  }
+  // A②③ / 終了時間のみ / フリー
+  locateAndBegin(Date.now());
+}
+
+function locateAndBegin(now) {
+  const g = getGroup(state.currentId);
+  if (isScheduled()) {
+    const loc = locateSegment(now);
+    if (loc.finished) { finishSchedule(); return; }
+    state.timerIdx     = loc.i;
+    state.round        = loc.round;
+    state.totalMs      = g.timers[loc.i].sec * 1000;
+    state.timeLeftMs   = loc.remainingMs;
+    state.segStartMs   = loc.segStartMs;
+    state.segEndMs     = loc.segEndMs;
+    state.segTruncated = loc.truncated;
+  } else {
+    state.totalMs    = g.timers[state.timerIdx].sec * 1000;
+    state.timeLeftMs = state.totalMs;
+    state.segStartMs = now;
+    state.segEndMs   = now + state.totalMs;
+  }
+  runCurrentSegment();
+}
+
+function runCurrentSegment() {
+  state.isRunning  = true;
+  state.waiting    = false;
+  state.finished   = false;
+  state.pausedAtMs = null;
+  state.started    = true;
+  state.targetMs   = Date.now() + state.timeLeftMs;
+  state.tick       = setInterval(onTick, 250);
   render();
 }
 
@@ -229,20 +398,58 @@ function pauseTimer() {
   if (!state.isRunning) return;
   state.isRunning  = false;
   state.timeLeftMs = Math.max(0, state.targetMs - Date.now());
+  state.pausedAtMs = Date.now();
   clearInterval(state.tick); state.tick = null;
   render();
 }
 
+// 再開モードB（配分に従う）／フリーモードの通常再開：止めた分だけ全体を後ろにずらす
+function resumeShift() {
+  const pauseDur = state.pausedAtMs != null ? (Date.now() - state.pausedAtMs) : 0;
+  if (state.segStartMs != null) state.segStartMs += pauseDur;
+  if (state.segEndMs   != null) state.segEndMs   += pauseDur;
+  if (isScheduled()) state.shiftMs += pauseDur;
+  runCurrentSegment();
+}
+
+// 再開モードA（時計に従う）：休んだ分は飛ばして現在時刻のスケジュール位置へ復帰
+function resumeFollowClock() {
+  state.pausedAtMs = null;
+  locateAndBegin(Date.now());
+}
+
 function resetTimer() {
-  state.isRunning = false;
   if (state.tick) { clearInterval(state.tick); state.tick = null; }
   resetToGroup(state.currentId);
   render();
 }
 
 function skipTimer() {
-  pauseTimer();
-  advanceTimer(true);
+  if (state.finished) return;
+  if (state.waiting) {
+    // 待機をスキップ → 今すぐ開始
+    clearInterval(state.tick); state.tick = null;
+    state.waiting = false;
+    locateAndBegin(Date.now());
+    return;
+  }
+  const wasRunning = state.isRunning;
+  if (state.isRunning) {
+    state.isRunning  = false;
+    state.timeLeftMs = Math.max(0, state.targetMs - Date.now());
+    clearInterval(state.tick); state.tick = null;
+  }
+  advanceTimer(true, wasRunning);
+}
+
+function onWaitTick() {
+  if (Date.now() >= state.targetMs) {
+    clearInterval(state.tick); state.tick = null;
+    state.waiting = false;
+    locateAndBegin(Date.now());
+  } else {
+    document.getElementById('timer-time').textContent = fmtMs(Math.max(0, state.targetMs - Date.now()));
+  }
 }
 
 function onTick() {
@@ -251,32 +458,82 @@ function onTick() {
   else renderTimeAndRing();
 }
 
-function advanceTimer(manual) {
+function advanceTimer(manual, autoStart = false) {
   state.isRunning = false;
   if (state.tick) { clearInterval(state.tick); state.tick = null; }
 
-  const g         = getGroup(state.currentId);
-  const prevTimer = g.timers[state.timerIdx];
+  const g    = getGroup(state.currentId);
+  const prev = g.timers[Math.min(state.timerIdx, g.timers.length - 1)];
 
   if (!manual) { playSound(); vibrate(); }
 
-  state.timerIdx++;
-  if (state.timerIdx >= g.timers.length) {
-    state.timerIdx = 0;
-    state.round++;
+  let i = state.timerIdx + 1, round = state.round;
+  if (i >= g.timers.length) { i = 0; round++; }
+
+  // ── スケジュールモード（実行中） ──
+  if (isScheduled() && state.started) {
+    const endMs = effectiveEndMs();
+
+    // 手動スキップ：次パートが「今」始まるようスケジュールをずらす
+    if (manual) {
+      state.shiftMs += Date.now() - (state.segEndMs != null ? state.segEndMs : Date.now());
+    }
+    const nextStart = manual ? Date.now() : (state.segEndMs != null ? state.segEndMs : Date.now());
+
+    if (endMs !== null && nextStart >= endMs) {
+      state.timerIdx = i; state.round = round;
+      finishSchedule();
+      return;
+    }
+
+    let dur     = g.timers[i].sec * 1000;
+    let nextEnd = nextStart + dur;
+    let truncated = false;
+    if (endMs !== null && nextEnd >= endMs) { nextEnd = endMs; truncated = true; } // B②：最終パートを短縮
+
+    state.timerIdx     = i;
+    state.round        = round;
+    state.totalMs      = dur;
+    state.segStartMs   = nextStart;
+    state.segEndMs     = nextEnd;
+    state.segTruncated = truncated;
+    state.timeLeftMs   = Math.max(0, nextEnd - Date.now());
+
+    if (!manual) notify(`${g.name} — ${prev.name}終了！`, `次は ${g.timers[i].name}`);
+    render();
+    if (!manual || autoStart) setTimeout(runCurrentSegment, 300);
+    return;
   }
 
-  const nextTimer      = g.timers[state.timerIdx];
-  state.totalMs        = nextTimer.sec * 1000;
-  state.timeLeftMs     = state.totalMs;
+  // ── フリーモード ──
+  state.timerIdx   = i;
+  state.round      = round;
+  state.totalMs    = g.timers[i].sec * 1000;
+  state.timeLeftMs = state.totalMs;
+  const willRun = (!manual || autoStart);
+  state.segStartMs = willRun ? Date.now() : null;
+  state.segEndMs   = willRun ? Date.now() + state.totalMs : null;
 
-  if (!manual) {
-    notify(`${g.name} — ${prevTimer.name}終了！`, `次は ${nextTimer.name} ${fmtSec(nextTimer.sec)}`);
-  }
-
+  if (!manual) notify(`${g.name} — ${prev.name}終了！`, `次は ${g.timers[i].name} ${fmtSec(g.timers[i].sec)}`);
   render();
-  if (!manual) setTimeout(() => startTimer(), 800);
+  if (willRun) setTimeout(runCurrentSegment, 300);
 }
+
+function finishSchedule() {
+  state.isRunning = false;
+  state.finished  = true;
+  state.waiting   = false;
+  state.started   = false;
+  state.timeLeftMs = 0;
+  if (state.tick) { clearInterval(state.tick); state.tick = null; }
+  playSound(); vibrate();
+  notify('スケジュール終了', '設定した終了時間になりました');
+  render();
+}
+
+// ── RESUME DIALOG ─────────────────────────────────────────────────────────────
+function openResumeDialog()  { document.getElementById('resume-overlay').classList.add('open'); }
+function closeResumeDialog() { document.getElementById('resume-overlay').classList.remove('open'); }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 const CIRCUMFERENCE = 2 * Math.PI * 116;
@@ -304,32 +561,53 @@ function render() {
     if (active) el.style.setProperty('--preset-color', color);
   });
 
-  // バッジ（タイマー名 + グループカラー）
-  const badge = document.getElementById('session-badge');
-  badge.textContent = t.name;
-  badge.className   = 'session-badge';
-
-  // ステップ表示（タイマーが複数あるときのみ）
+  const badge  = document.getElementById('session-badge');
   const stepEl = document.getElementById('step-indicator');
-  if (g.timers.length > 1) {
-    stepEl.textContent  = `STEP ${state.timerIdx + 1} / ${g.timers.length}`;
-    stepEl.style.display = 'block';
-  } else {
+  const roundEl= document.getElementById('round-count');
+  const ring   = document.getElementById('ring-progress');
+  const timeEl = document.getElementById('timer-time');
+
+  badge.className = 'session-badge';
+
+  if (state.waiting) {
+    badge.textContent    = '開始待ち';
     stepEl.style.display = 'none';
+    timeEl.textContent   = fmtMs(Math.max(0, state.targetMs - Date.now()));
+    timeEl.style.fontSize= '44px';
+    roundEl.textContent  = `開始まで（${fmtClock(state.targetMs)}）`;
+    ring.style.strokeDashoffset = 0;
+  } else if (state.finished) {
+    badge.textContent    = '終了';
+    stepEl.style.display = 'none';
+    timeEl.textContent   = '00:00';
+    timeEl.style.fontSize= '56px';
+    roundEl.textContent  = '🏁 スケジュール終了';
+    ring.style.strokeDashoffset = 0;
+  } else {
+    badge.textContent = t.name;
+    if (g.timers.length > 1) {
+      stepEl.textContent   = `STEP ${state.timerIdx + 1} / ${g.timers.length}`;
+      stepEl.style.display = 'block';
+    } else {
+      stepEl.style.display = 'none';
+    }
+    roundEl.textContent = state.round > 0 ? `🔄 ${state.round}周目` : '開始前';
+    renderTimeAndRing();
   }
 
-  // 周回カウント
-  document.getElementById('round-count').textContent =
-    state.round > 0 ? `🔄 ${state.round}周目` : '開始前';
-
-  renderTimeAndRing();
-  const ring = document.getElementById('ring-progress');
   ring.style.stroke = color;
   ring.style.filter = `drop-shadow(0 0 6px ${color})`;
 
   const btn = document.getElementById('start-btn');
-  btn.textContent      = state.isRunning ? '⏸ 一時停止' : '▶ スタート';
-  btn.style.background = state.isRunning ? 'rgba(255,255,255,0.1)' : color;
+  if (state.waiting) {
+    btn.textContent = '✕ 待機中止'; btn.style.background = 'rgba(255,255,255,0.1)';
+  } else if (state.finished) {
+    btn.textContent = '↺ もう一度'; btn.style.background = color;
+  } else if (state.isRunning) {
+    btn.textContent = '⏸ 一時停止'; btn.style.background = 'rgba(255,255,255,0.1)';
+  } else {
+    btn.textContent = '▶ スタート'; btn.style.background = color;
+  }
 
   renderTimerListPanel();
 }
@@ -340,10 +618,13 @@ function renderTimerListPanel() {
   const g = getGroup(state.currentId);
   body.innerHTML = '';
   g.timers.forEach((t, i) => {
-    const isActive = i === state.timerIdx;
+    const isActive = !state.waiting && !state.finished && i === state.timerIdx;
     const row = document.createElement('div');
     row.className = 'tl-row' + (isActive ? ' active' : '');
+    const clockHtml = state.showClock
+      ? `<span class="tl-clock">${fmtClock(rowClockMs(i))}</span>` : '';
     row.innerHTML = `
+      ${clockHtml}
       <span class="tl-step">${i + 1}</span>
       <span class="tl-name">${escHtml(t.name)}</span>
       <span class="tl-dur">${fmtSec(t.sec)}</span>
@@ -410,6 +691,21 @@ function renderSettings() {
 
   document.querySelectorAll('.sound-opt').forEach(el =>
     el.classList.toggle('selected', el.dataset.sound === state.sound));
+
+  const slider = document.getElementById('volume-slider');
+  const label  = document.getElementById('volume-label');
+  if (slider) {
+    slider.value   = Math.round(state.volume * 100);
+    label.textContent = Math.round(state.volume * 100) + '%';
+  }
+
+  // スケジュール設定欄
+  const sc = document.getElementById('show-clock-chk');
+  if (sc) sc.checked = state.showClock;
+  const st = document.getElementById('start-time');
+  if (st) st.value = state.startStr;
+  const et = document.getElementById('end-time');
+  if (et) et.value = state.endStr;
 }
 
 // ── GROUP FORM ────────────────────────────────────────────────────────────────
@@ -537,8 +833,12 @@ function deleteGroup(id) {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function init() {
-  state.groups = loadGroups();
-  state.sound  = localStorage.getItem(SOUND_KEY) || 'beep';
+  state.groups    = loadGroups();
+  state.sound     = localStorage.getItem(SOUND_KEY)  || 'beep';
+  state.volume    = parseFloat(localStorage.getItem(VOLUME_KEY) ?? '0.8');
+  state.showClock = localStorage.getItem(SHOWCLOCK_KEY) !== 'false';
+  state.startStr  = localStorage.getItem(START_KEY) || '';
+  state.endStr    = localStorage.getItem(END_KEY)   || '';
 
   resetToGroup(state.groups[0].id);
   renderGroupTabs();
@@ -550,8 +850,7 @@ function init() {
   if ('Notification' in window && Notification.permission !== 'granted')
     document.getElementById('notif-banner').style.display = 'block';
 
-  document.getElementById('start-btn').addEventListener('click', () =>
-    state.isRunning ? pauseTimer() : startTimer());
+  document.getElementById('start-btn').addEventListener('click', onStartButton);
   document.getElementById('reset-btn').addEventListener('click', resetTimer);
   document.getElementById('skip-btn').addEventListener('click', skipTimer);
   document.getElementById('notif-banner').addEventListener('click', requestNotifPerm);
@@ -585,6 +884,12 @@ function init() {
     renderFormTimers(current);
   });
 
+  document.getElementById('volume-slider').addEventListener('input', e => {
+    state.volume = parseInt(e.target.value) / 100;
+    localStorage.setItem(VOLUME_KEY, state.volume);
+    document.getElementById('volume-label').textContent = e.target.value + '%';
+  });
+
   document.querySelectorAll('.sound-opt').forEach(el =>
     el.addEventListener('click', () => {
       state.sound = el.dataset.sound;
@@ -593,6 +898,34 @@ function init() {
       document.querySelectorAll('.sound-opt').forEach(o =>
         o.classList.toggle('selected', o.dataset.sound === state.sound));
     }));
+
+  // ── スケジュール（時計ベース）設定 ──
+  document.getElementById('show-clock-chk').addEventListener('change', e => {
+    state.showClock = e.target.checked;
+    localStorage.setItem(SHOWCLOCK_KEY, state.showClock);
+    renderTimerListPanel();
+  });
+  document.getElementById('start-time').addEventListener('input', e => {
+    state.startStr = e.target.value.trim();
+    localStorage.setItem(START_KEY, state.startStr);
+    render();
+  });
+  document.getElementById('end-time').addEventListener('input', e => {
+    state.endStr = e.target.value.trim();
+    localStorage.setItem(END_KEY, state.endStr);
+    render();
+  });
+
+  // ── 再開ダイアログ ──
+  document.getElementById('resume-clock').addEventListener('click', () => {
+    closeResumeDialog(); resumeFollowClock();
+  });
+  document.getElementById('resume-shift').addEventListener('click', () => {
+    closeResumeDialog(); resumeShift();
+  });
+  document.getElementById('resume-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeResumeDialog();
+  });
 
   requestNotifPerm();
 }

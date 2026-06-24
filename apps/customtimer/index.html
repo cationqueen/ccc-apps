@@ -116,6 +116,30 @@
       <button class="btn-add-preset" id="btn-add-preset">＋ グループを追加</button>
     </div>
 
+    <!-- スケジュール（時計ベース） -->
+    <div class="settings-section">
+      <h3>スケジュール（時計ベース）</h3>
+      <label class="toggle-row">
+        <input type="checkbox" id="show-clock-chk">
+        <span>タイマー一覧に時刻を表示</span>
+      </label>
+      <div class="sched-grid">
+        <div class="form-row">
+          <label>開始時間 <small style="font-weight:400;">（任意・例 9:00）</small></label>
+          <input type="text" id="start-time" placeholder="9:00" maxlength="5" inputmode="numeric">
+        </div>
+        <div class="form-row">
+          <label>終了時間 <small style="font-weight:400;">（任意・例 12:00 / 25:00）</small></label>
+          <input type="text" id="end-time" placeholder="12:00" maxlength="5" inputmode="numeric">
+        </div>
+      </div>
+      <p class="sched-note">
+        開始時間を設定すると、その時刻を基準にタイマーが時計に沿って進みます（開始前ならスタートで待機）。<br>
+        終了時間を設定すると、その時刻でちょうど止まります（最後のパートは短縮）。<br>
+        翌日にまたぐ場合は <b>25:00</b> のように24時以上で入力してください。空欄なら従来どおりのカウントダウンです。
+      </p>
+    </div>
+
     <!-- サウンド -->
     <div class="settings-section">
       <h3>終了音</h3>
@@ -123,6 +147,11 @@
         <button class="sound-opt selected" data-sound="beep">ビープ音</button>
         <button class="sound-opt" data-sound="bell">ベル</button>
         <button class="sound-opt" data-sound="none">なし</button>
+      </div>
+      <div class="volume-row">
+        <label for="volume-slider">音量</label>
+        <input type="range" id="volume-slider" min="0" max="100" value="80">
+        <span id="volume-label">80%</span>
       </div>
     </div>
 
@@ -138,6 +167,21 @@
       </p>
     </div>
 
+  </div>
+</div>
+
+<!-- 再開ダイアログ（スケジュール設定時のみ） -->
+<div class="resume-overlay" id="resume-overlay">
+  <div class="resume-box">
+    <h3>再開方法を選んでください</h3>
+    <button class="resume-opt" id="resume-clock">
+      <span class="ro-title">🕐 時計に合わせる</span>
+      <span class="ro-desc">休んだ分は飛ばして、今の時刻のスケジュール位置に復帰します</span>
+    </button>
+    <button class="resume-opt" id="resume-shift">
+      <span class="ro-title">⏱ 続きから</span>
+      <span class="ro-desc">止めた所から再開。スケジュール全体を休んだ分だけ後ろにずらします</span>
+    </button>
   </div>
 </div>
 
