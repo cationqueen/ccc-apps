@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アプリ開発のご依頼 | Cation Creative Company アプリ開発部</title>
+  <meta name="description" content="あなた専用の業務効率化ツール・AI活用アプリ・デスクトップアプリを開発します。専門用語に強いカスタム翻訳アプリや軽量ツールの開発実績あり。Python / Electron / OpenAI API対応。">
+  <meta name="keywords" content="アプリ開発, 受託開発, 業務効率化, 自動化ツール, デスクトップアプリ, AIツール, ChatGPT API, Python, 個人開発, ココナラ">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ご依頼ページ専用スタイル */
+    .lead-block { max-width: 680px; font-size: 0.96rem; margin-bottom: 24px; }
+
+    .can-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .can-card {
+      background: var(--bg-white);
+      border-radius: 10px;
+      padding: 20px 18px;
+      box-shadow: var(--shadow);
+    }
+    .can-card .can-icon { font-size: 26px; margin-bottom: 8px; }
+    .can-card .can-title { font-weight: 700; color: var(--navy); font-size: 0.95rem; margin-bottom: 6px; }
+    .can-card .can-desc { font-size: 0.82rem; color: var(--text-muted); }
+
+    /* 実績 */
+    .work-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .work-card {
+      background: var(--bg-white);
+      border-radius: 12px;
+      padding: 22px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .work-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+    .work-card .work-badge {
+      align-self: flex-start;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      background: #d4f0df;
+      color: #1a7a40;
+    }
+    .work-card .work-badge.wip { background: #fde8c8; color: #9a5c00; }
+    .work-card .work-name { font-weight: 700; color: var(--navy); font-size: 1.05rem; }
+    .work-card .work-desc { font-size: 0.85rem; color: var(--text-muted); flex: 1; }
+
+    /* 料金プラン */
+    .price-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .price-card {
+      background: var(--bg-white);
+      border-radius: 12px;
+      padding: 28px 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      border: 1.5px solid var(--border);
+    }
+    .price-card.recommend { border: 2px solid var(--gold); }
+    .price-card .price-tag {
+      position: absolute; top: -12px; right: 16px;
+      background: var(--gold); color: var(--navy);
+      font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+    }
+    .price-card .plan-name { font-weight: 700; color: var(--navy); font-size: 1.1rem; }
+    .price-card .plan-price { font-size: 1.5rem; font-weight: 800; color: var(--gold); }
+    .price-card .plan-price small { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+    .price-card .plan-for { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px; }
+    .price-card ul {
+      list-style: none; font-size: 0.84rem; display: flex; flex-direction: column; gap: 6px;
+    }
+    .price-card ul li::before { content: "✓ "; color: var(--gold); font-weight: 700; }
+    .price-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 14px; }
+
+    /* CTA */
+    .cta-box {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .cta-box h2 { color: #fff; border: none; padding: 0; font-size: 1.4rem; margin-bottom: 10px; }
+    .cta-box p { font-size: 0.92rem; color: rgba(255,255,255,0.8); margin-bottom: 24px; }
+    .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    .note-list { max-width: 680px; font-size: 0.88rem; padding-left: 20px; color: var(--text); }
+    .note-list li { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">
+    <div class="logo-mark">CCC</div>
+    <div>
+      <div class="logo-text">Cation Creative Company</div>
+      <div class="logo-sub">アプリ開発部</div>
+    </div>
+  </div>
+  <nav>
+    <a href="index.html">ホーム</a>
+    <a href="#can">できること</a>
+    <a href="#works">実績</a>
+    <a href="#price">料金</a>
+    <a href="#flow">制作の流れ</a>
+    <a href="#contact">ご依頼</a>
+  </nav>
+</header>
+
+<!-- Hero -->
+<section class="detail-hero" style="background:linear-gradient(135deg,#142a45,#1e3a5f,#2a4f80);">
+  <div class="detail-hero-inner" style="display:block;">
+    <div class="breadcrumb"><a href="index.html">ホーム</a><span>›</span>アプリ開発のご依頼</div>
+    <h1>あなたの「あったらいいな」を、<br>ちょうどいいアプリに。</h1>
+    <div class="tagline">既製ツールでは届かないニッチな課題に、専用アプリで応える受託開発サービスです。</div>
+    <p style="font-size:0.9rem;color:rgba(255,255,255,0.7);max-width:560px;margin:8px 0 24px;">
+      「毎回の手作業を自動化したい」「専門分野に対応した翻訳ツールがほしい」「市販ソフトは多機能すぎて使いづらい」——
+      そんな"自分だけの一本"を、実際に動く形でお作りします。
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <a href="#contact" class="btn btn-primary">相談・依頼する</a>
+      <a href="#works" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1.5px solid rgba(255,255,255,0.4);">開発実績を見る</a>
+    </div>
+  </div>
+</section>
+
+<!-- なぜCCCか -->
+<div class="detail-section" id="why">
+  <h2>個人スタジオだからできること</h2>
+  <p class="lead-block">
+    CCCアプリ開発部は、「必要な人に、ちょうどいいアプリを」をモットーにした小さなアプリスタジオです。
+    大手の受託開発のような大規模システムではなく、<strong>個人や小さなチームの"地味だが切実な不便"を、過不足のないアプリで解決する</strong>ことを得意としています。
+  </p>
+  <div class="can-grid">
+    <div class="can-card">
+      <div class="can-icon">🎯</div>
+      <div class="can-title">ニッチに強い</div>
+      <div class="can-desc">「こんな小さな需要、誰も作ってくれない」課題こそ歓迎。実際の現場の声から作ります。</div>
+    </div>
+    <div class="can-card">
+      <div class="can-icon">🪶</div>
+      <div class="can-title">過不足のない設計</div>
+      <div class="can-desc">多機能で重いソフトではなく、あなたが使う機能だけに絞った軽い一本に仕上げます。</div>
+    </div>
+    <div class="can-card">
+      <div class="can-icon">💬</div>
+      <div class="can-title">非エンジニアにやさしい</div>
+      <div class="can-desc">専門用語を使わずヒアリング。完成後の使い方も、わかる言葉で説明します。</div>
+    </div>
+    <div class="can-card">
+      <div class="can-icon">⚙️</div>
+      <div class="can-title">"動くもの"を納品</div>
+      <div class="can-desc">企画書だけで終わらせません。実際に手元で動くアプリをお渡しします。</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- できること -->
+<div class="detail-section" id="can">
+  <h2>こんなものが作れます</h2>
+  <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:4px;">対応分野の一例です。「これは作れる？」というご相談だけでも歓迎します。</p>
+  <div class="can-grid">
+    <div class="can-card">
+      <div class="can-icon">🔁</div>
+      <div class="can-title">業務効率化・自動化ツール</div>
+      <div class="can-desc">繰り返しのExcel処理・ファイル整理・名前変更・データ変換などを自動化するツール。</div>
+    </div>
+    <div class="can-card">
+      <div class="can-icon">🤖</div>
+      <div class="can-title">AI活用ツール</div>
+      <div class="can-desc">ChatGPT（OpenAI API）を組み込んだ翻訳・要約・分類・チャットなど、あなたの用途専用のAIツール。</div>
+    </div>
+    <div class="can-card">
+      <div class="can-icon">📖</div>
+      <div class="can-title">専門分野カスタム翻訳</div>
+      <div class="can-desc">医療・法律・学術・信仰・ゲームなど、専門用語の辞書を育てられる翻訳アプリ。<span class="sr-only">宗教</span></div>
+    </div>
+    <div class="can-card">
+      <div class="can-icon">🪟</div>
+      <div class="can-title">Windowsデスクトップアプリ</div>
+      <div class="can-desc">インストール不要のexe形式で配布できる、シンプルなWindows用アプリ。</div>
+    </div>
+    <div class="can-card">
+      <div class="can-icon">📊</div>
+      <div class="can-title">データ可視化ツール</div>
+      <div class="can-desc">地図・グラフ・アニメーションでデータを「見える形」に。GPXルート・統計図・分布図など。</div>
+    </div>
+    <div class="can-card">
+      <div class="can-icon">🌐</div>
+      <div class="can-title">ブラウザで動く簡易ツール</div>
+      <div class="can-desc">インストール不要・スマホ対応の小さなWebツール（タイマー・計算・変換など）。</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 実績 -->
+<div class="detail-section" id="works">
+  <h2>開発実績</h2>
+  <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:4px;">実際に作って、動いているアプリです。下記は手元で・ブラウザですぐ確認できます。</p>
+  <div class="work-grid">
+
+    <div class="work-card">
+      <span class="work-badge">Web公開中・体験可</span>
+      <div class="work-name">⏱ CustomTimer</div>
+      <div class="work-desc">ポモドーロ等4プリセット＋自由追加できる無料Webタイマー。インストール不要・スマホ/PC対応。通知・周回カウント対応。</div>
+      <a href="apps/customtimer/index.html" class="btn btn-primary" style="align-self:flex-start;">今すぐ試す</a>
+    </div>
+
+    <div class="work-card">
+      <span class="work-badge">配布・実利用中</span>
+      <div class="work-name">📖 CustomTranslater</div>
+      <div class="work-desc">専門用語の辞書を自分で育てられるAIカスタム翻訳アプリ（Windows / exe）。実際の利用者に向けて開発・納品した実績あり。</div>
+      <a href="apps/customtranslater.html" class="btn btn-outline" style="align-self:flex-start;">詳細を見る</a>
+    </div>
+
+    <div class="work-card">
+      <span class="work-badge">納品実績</span>
+      <div class="work-name">🗾 歴史地図の可視化</div>
+      <div class="work-desc">境界データ（GeoJSON）＋Pythonで、歴史上の勢力図を自動作図。年代違いの地図を量産するパイプラインを構築した実績。</div>
+    </div>
+
+    <div class="work-card">
+      <span class="work-badge wip">開発中</span>
+      <div class="work-name">🎬 CustomMovieMaker ほか</div>
+      <div class="work-desc">軽量Windows動画編集アプリ、Android向け音声アプリ、GPXルート可視化アプリなどを開発中。Python / Electron / Kotlin / FastAPI に対応。</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 料金 -->
+<div class="detail-section" id="price">
+  <h2>料金プラン（目安）</h2>
+  <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:4px;">
+    内容により変動します。まずはご相談ください。正式なお見積りはヒアリング後にご提示します。
+  </p>
+  <div class="price-grid">
+
+    <div class="price-card">
+      <div class="plan-name">ライト</div>
+      <div class="plan-price">¥15,000<small>〜</small></div>
+      <div class="plan-for">単機能の自動化ツール・小さなスクリプト</div>
+      <ul>
+        <li>ファイル処理・変換などの自動化</li>
+        <li>1〜2機能のシンプルなツール</li>
+        <li>動作する形でお渡し</li>
+      </ul>
+    </div>
+
+    <div class="price-card recommend">
+      <div class="price-tag">人気</div>
+      <div class="plan-name">スタンダード</div>
+      <div class="plan-price">¥50,000<small>〜</small></div>
+      <div class="plan-for">GUI付きデスクトップアプリ・AI組込ツール</div>
+      <ul>
+        <li>画面付きWindowsアプリ（exe配布）</li>
+        <li>AI（OpenAI API）組み込み対応</li>
+        <li>カスタム辞書・設定機能など</li>
+        <li>簡単な使い方マニュアル付き</li>
+      </ul>
+    </div>
+
+    <div class="price-card">
+      <div class="plan-name">プレミアム</div>
+      <div class="plan-price">¥120,000<small>〜</small></div>
+      <div class="plan-for">多機能アプリ・配布形式・継続サポート</div>
+      <ul>
+        <li>複数機能の本格的なアプリ</li>
+        <li>インストーラー／配布形式の整備</li>
+        <li>納品後のサポート・改修対応</li>
+        <li>仕様書・ドキュメント整備</li>
+      </ul>
+    </div>
+
+  </div>
+  <p class="price-note">
+    ※ AI機能を含む場合、OpenAI等のAPI利用料は別途お客様負担となります（一般的な用途で月数百円程度の目安）。<br>
+    ※ 修正は各プラン2回まで無料。継続的な機能追加・保守は別途ご相談に応じます。
+  </p>
+</div>
+
+<div class="divider"></div>
+
+<!-- 制作の流れ -->
+<div class="detail-section" id="flow">
+  <h2>制作の流れ</h2>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="step-num">STEP 1</div>
+      <div class="step-title">ご相談・ヒアリング</div>
+      <div class="step-desc">「何に困っているか」をお聞きします。技術的な知識は不要です。</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">STEP 2</div>
+      <div class="step-title">お見積り・ご提案</div>
+      <div class="step-desc">実現方法・料金・納期をご提示。納得いただいてから着手します。</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">STEP 3</div>
+      <div class="step-title">開発</div>
+      <div class="step-desc">途中経過を共有しながら開発。認識のズレを早めにすり合わせます。</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">STEP 4</div>
+      <div class="step-title">納品・お渡し</div>
+      <div class="step-desc">動くアプリと使い方をお渡し。修正は2回まで無料で対応します。</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 注意事項 -->
+<div class="detail-section" id="notes">
+  <h2>お引き受けにあたって</h2>
+  <ul class="note-list">
+    <li>個人で開発しているため、大規模システム・スマホアプリのストア申請代行・常時稼働サーバー運用などは対応外の場合があります。まずはご相談ください。</li>
+    <li>AI機能を含む場合、API利用料はお客様のアカウントでのご負担となります（キーの取得・設定はサポートします）。</li>
+    <li>違法・公序良俗に反する用途、他者の権利を侵害するツールの開発はお引き受けできません。</li>
+    <li>お預かりした情報・データは開発目的以外に使用しません。機密情報の取り扱いには十分配慮します。</li>
+  </ul>
+</div>
+
+<div class="divider"></div>
+
+<!-- CTA / お問い合わせ -->
+<div class="detail-section" id="contact">
+  <div class="cta-box">
+    <h2>まずは「これ作れる？」から</h2>
+    <p>具体的に決まっていなくて大丈夫です。困りごとを聞かせていただければ、実現できるかどうか・どんな形になるかをご提案します。</p>
+    <div class="cta-actions">
+      <!-- ▼▼ 公開後：ココナラ出品URLをここに差し込む（決済・やり取りはココナラ内で完結） ▼▼ -->
+      <a href="#" class="btn btn-primary" id="coconala-link" style="opacity:0.6;pointer-events:none;">ココナラで相談する（準備中）</a>
+      <a href="mailto:cation.queen@gmail.com?subject=アプリ開発のご相談&body=作りたいアプリ・困っていること：%0A%0Aご予算（任意）：%0A希望納期（任意）：%0A" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1.5px solid rgba(255,255,255,0.4);">メールで相談する</a>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="detail-section">
+  <h2>よくある質問</h2>
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:700px;">
+
+    <details style="background:var(--bg-white);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);">
+      <summary style="font-weight:700;cursor:pointer;color:var(--navy);">技術のことが全くわからなくても依頼できますか？</summary>
+      <p style="margin-top:10px;font-size:0.9rem;">はい。「何に困っているか」さえ教えていただければ大丈夫です。実現方法はこちらで考えてご提案します。専門用語を使わずにやり取りします。</p>
+    </details>
+
+    <details style="background:var(--bg-white);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);">
+      <summary style="font-weight:700;cursor:pointer;color:var(--navy);">作りたいものが固まっていません。それでも相談できますか？</summary>
+      <p style="margin-top:10px;font-size:0.9rem;">もちろんです。むしろ「ぼんやりした困りごと」を一緒に整理するところからお手伝いします。相談だけで費用は発生しません。</p>
+    </details>
+
+    <details style="background:var(--bg-white);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);">
+      <summary style="font-weight:700;cursor:pointer;color:var(--navy);">納期はどのくらいですか？</summary>
+      <p style="margin-top:10px;font-size:0.9rem;">内容によりますが、シンプルなツールで1〜2週間、GUI付きアプリで2〜4週間が目安です。ヒアリング後に正式な納期をお伝えします。</p>
+    </details>
+
+    <details style="background:var(--bg-white);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);">
+      <summary style="font-weight:700;cursor:pointer;color:var(--navy);">納品後の修正や機能追加はできますか？</summary>
+      <p style="margin-top:10px;font-size:0.9rem;">納品後の修正は2回まで無料です。それ以降の機能追加・保守は内容に応じて別途お見積りします。長くお使いいただけるようサポートします。</p>
+    </details>
+
+  </div>
+</div>
+
+<footer>
+  <p style="margin-bottom:8px;">&copy; 2026 <strong style="color:#fff;">Cation Creative Company</strong> — アプリ開発部</p>
+  <p><a href="index.html">← アプリ一覧に戻る</a> ／ お問い合わせ：<a href="mailto:cation.queen@gmail.com">cation.queen@gmail.com</a></p>
+</footer>
+
+</body>
+</html>
