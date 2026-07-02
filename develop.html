@@ -108,6 +108,73 @@
 
     .note-list { max-width: 680px; font-size: 0.88rem; padding-left: 20px; color: var(--text); }
     .note-list li { margin-bottom: 8px; }
+
+    /* ===== AI見積り相談チャット ===== */
+    .estimate-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(20, 32, 53, 0.55);
+      display: none; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .estimate-overlay.open { display: flex; }
+    .estimate-modal {
+      background: var(--bg-white);
+      width: 100%; max-width: 480px; height: 80vh; max-height: 640px;
+      border-radius: 16px; box-shadow: var(--shadow-hover);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .estimate-head {
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      color: #fff; padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .estimate-head .est-title { font-weight: 700; font-size: 0.98rem; }
+    .estimate-head .est-sub { font-size: 0.72rem; color: rgba(255,255,255,0.7); }
+    .estimate-close {
+      background: rgba(255,255,255,0.15); color: #fff; border: none;
+      width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 18px; line-height: 1;
+    }
+    .estimate-close:hover { background: rgba(255,255,255,0.3); }
+    .estimate-body {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      background: var(--bg);
+    }
+    .est-msg { display: flex; gap: 8px; max-width: 88%; }
+    .est-msg .est-bubble {
+      padding: 10px 14px; border-radius: 14px; font-size: 0.88rem; line-height: 1.6;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .est-msg.ai { align-self: flex-start; }
+    .est-msg.ai .est-bubble { background: var(--bg-white); color: var(--text); box-shadow: var(--shadow); border-bottom-left-radius: 4px; }
+    .est-msg.me { align-self: flex-end; }
+    .est-msg.me .est-bubble { background: var(--navy); color: #fff; border-bottom-right-radius: 4px; }
+    .est-typing { font-size: 0.8rem; color: var(--text-muted); padding: 0 4px; }
+    .estimate-actions {
+      padding: 10px 14px; border-top: 1px solid var(--border); background: var(--bg-white);
+      display: none; gap: 8px; flex-wrap: wrap; flex-shrink: 0;
+    }
+    .estimate-actions.show { display: flex; }
+    .estimate-actions .btn { padding: 8px 14px; font-size: 0.8rem; flex: 1; min-width: 130px; }
+    .estimate-input {
+      display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border);
+      background: var(--bg-white); flex-shrink: 0;
+    }
+    .estimate-input textarea {
+      flex: 1; resize: none; border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 9px 12px; font-size: 0.88rem; font-family: inherit; line-height: 1.5; max-height: 96px;
+    }
+    .estimate-input textarea:focus { outline: none; border-color: var(--gold); }
+    .estimate-send {
+      background: var(--gold); color: var(--navy); border: none; border-radius: 10px;
+      padding: 0 16px; font-weight: 700; cursor: pointer; font-size: 0.88rem;
+    }
+    .estimate-send:hover { background: var(--gold-light); }
+    .estimate-send:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+    .estimate-note { font-size: 0.68rem; color: var(--text-muted); text-align: center; padding: 0 12px 8px; background: var(--bg-white); }
+    @media (max-width: 720px) {
+      .estimate-modal { height: 92vh; max-height: none; max-width: none; }
+    }
   </style>
 </head>
 <body>
@@ -175,6 +242,12 @@
       <div class="can-title">"動くもの"を納品</div>
       <div class="can-desc">企画書だけで終わらせません。実際に手元で動くアプリをお渡しします。</div>
     </div>
+    <div class="can-card">
+      <div class="can-icon">🤖</div>
+      <div class="can-title">AIヒアリングで、その場で概算</div>
+      <div class="can-desc">AIとの対話で「作りたいもの」を整理。ご要望を引き出しながら、おおよその料金の目安までその場でご案内します。</div>
+      <button type="button" class="btn btn-primary" data-estimate-open style="margin-top:12px;width:100%;">🤖 AIで見積り相談する</button>
+    </div>
   </div>
 </div>
 
@@ -230,7 +303,7 @@
       <span class="work-badge">Web公開中・体験可</span>
       <div class="work-name">⏱ CustomTimer</div>
       <div class="work-desc">ポモドーロ等4プリセット＋自由追加できる無料Webタイマー。インストール不要・スマホ/PC対応。通知・周回カウント対応。</div>
-      <a href="apps/customtimer/index.html" class="btn btn-primary" style="align-self:flex-start;">今すぐ試す</a>
+      <a href="../CustomTimer係/index.html" class="btn btn-primary" style="align-self:flex-start;">今すぐ試す</a>
     </div>
 
     <div class="work-card">
@@ -316,13 +389,13 @@
   <div class="flow-steps">
     <div class="flow-step">
       <div class="step-num">STEP 1</div>
-      <div class="step-title">ご相談・ヒアリング</div>
-      <div class="step-desc">「何に困っているか」をお聞きします。技術的な知識は不要です。</div>
+      <div class="step-title">ご相談・AIヒアリング</div>
+      <div class="step-desc">「何に困っているか」をお聞きします。AIとの対話でご要望を整理することもでき、その場でおおよその料金感もつかめます。技術的な知識は不要です。</div>
     </div>
     <div class="flow-step">
       <div class="step-num">STEP 2</div>
       <div class="step-title">お見積り・ご提案</div>
-      <div class="step-desc">実現方法・料金・納期をご提示。納得いただいてから着手します。</div>
+      <div class="step-desc">ヒアリング内容をもとに実現方法・料金・納期を正式にご提示。納得いただいてから着手します。</div>
     </div>
     <div class="flow-step">
       <div class="step-num">STEP 3</div>
@@ -358,8 +431,9 @@
     <h2>まずは「これ作れる？」から</h2>
     <p>具体的に決まっていなくて大丈夫です。困りごとを聞かせていただければ、実現できるかどうか・どんな形になるかをご提案します。</p>
     <div class="cta-actions">
+      <button type="button" class="btn btn-primary" data-estimate-open>🤖 AIで見積り相談する</button>
       <!-- ▼▼ 公開後：ココナラ出品URLをここに差し込む（決済・やり取りはココナラ内で完結） ▼▼ -->
-      <a href="#" class="btn btn-primary" id="coconala-link" style="opacity:0.6;pointer-events:none;">ココナラで相談する（準備中）</a>
+      <a href="#" class="btn" id="coconala-link" style="background:rgba(255,255,255,0.15);color:#fff;border:1.5px solid rgba(255,255,255,0.4);opacity:0.6;pointer-events:none;">ココナラで相談する（準備中）</a>
       <a href="mailto:cation.queen@gmail.com?subject=アプリ開発のご相談&body=作りたいアプリ・困っていること：%0A%0Aご予算（任意）：%0A希望納期（任意）：%0A" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1.5px solid rgba(255,255,255,0.4);">メールで相談する</a>
     </div>
   </div>
@@ -397,6 +471,199 @@
   <p style="margin-bottom:8px;">&copy; 2026 <strong style="color:#fff;">Cation Creative Company</strong> — アプリ開発部</p>
   <p><a href="index.html">← アプリ一覧に戻る</a> ／ お問い合わせ：<a href="mailto:cation.queen@gmail.com">cation.queen@gmail.com</a></p>
 </footer>
+
+<!-- ===== AI見積り相談 モーダル ===== -->
+<div class="estimate-overlay" id="estimateOverlay" aria-hidden="true">
+  <div class="estimate-modal" role="dialog" aria-modal="true" aria-label="AI見積り相談">
+    <div class="estimate-head">
+      <div>
+        <div class="est-title">🤖 AIで見積り相談</div>
+        <div class="est-sub">対話でご要望を整理し、概算をご案内します</div>
+      </div>
+      <button type="button" class="estimate-close" id="estimateClose" aria-label="閉じる">×</button>
+    </div>
+    <div class="estimate-body" id="estimateBody"></div>
+    <div class="estimate-actions" id="estimateActions">
+      <a href="#" class="btn btn-primary" id="estMailBtn">この内容でメール相談</a>
+      <a href="#" class="btn btn-outline" id="estCoconalaBtn" style="opacity:0.6;pointer-events:none;">ココナラで相談（準備中）</a>
+    </div>
+    <div class="estimate-input">
+      <textarea id="estimateInput" rows="1" placeholder="作りたいもの・困っていることを入力…"></textarea>
+      <button type="button" class="estimate-send" id="estimateSend">送信</button>
+    </div>
+    <div class="estimate-note">AIによる概算です。正式なお見積りはヒアリング後にご提示します。</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ▼▼ デプロイ後にWorkerのURLをここに設定（例: https://ccc-estimate-bot.xxxx.workers.dev）▼▼
+  const WORKER_URL = "https://ccc-estimate-bot.cationqueen.workers.dev";
+
+  const overlay  = document.getElementById("estimateOverlay");
+  const bodyEl   = document.getElementById("estimateBody");
+  const inputEl  = document.getElementById("estimateInput");
+  const sendBtn  = document.getElementById("estimateSend");
+  const closeBtn = document.getElementById("estimateClose");
+  const actions  = document.getElementById("estimateActions");
+  const mailBtn  = document.getElementById("estMailBtn");
+
+  const GREETING =
+    "こんにちは！アプリ開発部の見積り相談アシスタントです。\n" +
+    "「どんなことに困っているか」「作ってみたいもの」を、ざっくりで大丈夫なので教えてください。\n" +
+    "対話の中でご要望を整理して、おおよその料金の目安までご案内します🙂";
+
+  let convo = [];        // APIに送る会話履歴（user/assistant）
+  let busy = false;
+  let started = false;
+
+  function addBubble(role, text) {
+    const wrap = document.createElement("div");
+    wrap.className = "est-msg " + (role === "user" ? "me" : "ai");
+    const b = document.createElement("div");
+    b.className = "est-bubble";
+    b.textContent = text;
+    wrap.appendChild(b);
+    bodyEl.appendChild(wrap);
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+    return b;
+  }
+
+  function openModal() {
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden", "false");
+    if (!started) {
+      started = true;
+      addBubble("assistant", GREETING);
+    }
+    setTimeout(() => inputEl.focus(), 50);
+  }
+  function closeModal() {
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden", "true");
+  }
+
+  document.querySelectorAll("[data-estimate-open]").forEach((btn) =>
+    btn.addEventListener("click", openModal)
+  );
+  closeBtn.addEventListener("click", closeModal);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("open")) closeModal();
+  });
+
+  // 入力欄の自動リサイズ
+  inputEl.addEventListener("input", () => {
+    inputEl.style.height = "auto";
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 96) + "px";
+  });
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  sendBtn.addEventListener("click", send);
+
+  function setBusy(b) {
+    busy = b;
+    sendBtn.disabled = b;
+    inputEl.disabled = b;
+  }
+
+  function updateMailLink() {
+    const userMsgs = convo.filter((m) => m.role === "user").map((m) => "・" + m.content);
+    const lastAi = [...convo].reverse().find((m) => m.role === "assistant");
+    const body =
+      "【AI見積り相談の内容】\n\n" +
+      "■ ご相談内容（お客様の入力）\n" + userMsgs.join("\n") + "\n\n" +
+      "■ AIによる整理・概算\n" + (lastAi ? lastAi.content : "") + "\n\n" +
+      "──────────\n" +
+      "※この内容で正式なお見積り・ご相談を希望します。";
+    mailBtn.href =
+      "mailto:cation.queen@gmail.com" +
+      "?subject=" + encodeURIComponent("アプリ開発のご相談（AI見積り相談より）") +
+      "&body=" + encodeURIComponent(body);
+    actions.classList.add("show");
+  }
+
+  async function send() {
+    const text = inputEl.value.trim();
+    if (!text || busy) return;
+
+    if (!WORKER_URL) {
+      addBubble("user", text);
+      inputEl.value = "";
+      inputEl.style.height = "auto";
+      addBubble("assistant",
+        "ただいまAI相談機能は準備中です🙏\n" +
+        "お手数ですが、ページ下部の「メールで相談する」からお気軽にご連絡ください。");
+      return;
+    }
+
+    addBubble("user", text);
+    convo.push({ role: "user", content: text });
+    inputEl.value = "";
+    inputEl.style.height = "auto";
+    setBusy(true);
+
+    const aiBubble = addBubble("assistant", "");
+    aiBubble.parentElement.querySelector(".est-bubble").textContent = "…";
+    let answer = "";
+
+    try {
+      const res = await fetch(WORKER_URL.replace(/\/$/, "") + "/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: convo }),
+      });
+
+      if (!res.ok || !res.body) {
+        let msg = "通信エラーが発生しました。少し時間をおいてお試しください。";
+        try { const j = await res.json(); if (j.error) msg = j.error; } catch (_) {}
+        aiBubble.textContent = msg;
+        setBusy(false);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      aiBubble.textContent = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop();
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith("data:")) continue;
+          let data;
+          try { data = JSON.parse(line.slice(5).trim()); } catch (_) { continue; }
+          if (data.text) {
+            answer += data.text;
+            aiBubble.textContent = answer;
+            bodyEl.scrollTop = bodyEl.scrollHeight;
+          } else if (data.error) {
+            aiBubble.textContent = data.error;
+          }
+        }
+      }
+
+      if (answer) {
+        convo.push({ role: "assistant", content: answer });
+        updateMailLink();
+      } else if (!aiBubble.textContent) {
+        aiBubble.textContent = "応答を取得できませんでした。もう一度お試しください。";
+      }
+    } catch (e) {
+      aiBubble.textContent = "通信エラーが発生しました。少し時間をおいてお試しください。";
+    } finally {
+      setBusy(false);
+      inputEl.focus();
+    }
+  }
+})();
+</script>
 
 </body>
 </html>
