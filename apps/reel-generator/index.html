@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>リール自動生成 | CCC アプリ開発部</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <h1>リール自動生成</h1>
+  <p>原稿を入れるだけで、音声とアバター動画を自動生成します</p>
+</header>
+
+<main>
+  <section id="login-card" class="card">
+    <label for="invite-code">招待コード</label>
+    <p class="hint">CCCから発行された招待コードを入力してください</p>
+    <input type="text" id="invite-code" placeholder="例: sogyojuku-001" />
+    <button id="login-btn">はじめる</button>
+    <p id="login-status" class="status"></p>
+  </section>
+
+  <section id="app-card" class="card" style="display:none;">
+    <p style="margin-bottom:16px;">
+      ログイン中: <strong id="user-label"></strong>
+      <span class="usage-badge" id="usage-badge"></span>
+    </p>
+
+    <label for="photo-input">顔写真（1枚）</label>
+    <p class="hint">正面を向いた顔写真をアップロードしてください。この写真がそのまま喋る動画になります。</p>
+    <input type="file" id="photo-input" accept="image/jpeg,image/png" />
+
+    <label for="script-input">原稿</label>
+    <p class="hint">読み上げてほしい文章をそのまま入力してください（最大2000文字）</p>
+    <textarea id="script-input" placeholder="こんにちは、〇〇です。今日は..."></textarea>
+
+    <label>声（TTSの音声）</label>
+    <p class="hint">顔写真の性別と音声は連動しません。ここで選んだ声が使われます。</p>
+    <div class="radio-group">
+      <label><input type="radio" name="voice-gender" value="female" checked /> 女性の声</label>
+      <label><input type="radio" name="voice-gender" value="male" /> 男性の声</label>
+    </div>
+
+    <label>投稿方法</label>
+    <div class="radio-group">
+      <label><input type="radio" name="post-mode" value="manual" checked /> 手動投稿（動画をダウンロード）</label>
+      <label><input type="radio" name="post-mode" value="auto" disabled /> 自動投稿（Instagram連携・近日公開）</label>
+    </div>
+
+    <button id="generate-btn">動画を生成する</button>
+    <p id="generate-status" class="status"></p>
+
+    <video id="result-video" controls style="display:none;"></video>
+    <a id="download-link" href="#" download style="display:none;">
+      <button style="margin-top:12px;">動画をダウンロード</button>
+    </a>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
