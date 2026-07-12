@@ -26,6 +26,7 @@ const scriptInput = document.getElementById("script-input");
 const generateBtn = document.getElementById("generate-btn");
 const checkStatusBtn = document.getElementById("check-status-btn");
 const generateStatus = document.getElementById("generate-status");
+const progressDetail = document.getElementById("progress-detail");
 const resultVideo = document.getElementById("result-video");
 const downloadLink = document.getElementById("download-link");
 
@@ -130,6 +131,25 @@ async function uploadMedia(file) {
 
 class PollTimeoutError extends Error {}
 
+function formatElapsed(startedAt) {
+  // startedAtはサーバーのSQLite datetime('now')形式（UTC、"YYYY-MM-DD HH:MM:SS"）
+  const startMs = Date.parse(startedAt.replace(" ", "T") + "Z");
+  const elapsedSec = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+  const m = Math.floor(elapsedSec / 60);
+  const s = elapsedSec % 60;
+  return `${m}分${String(s).padStart(2, "0")}秒`;
+}
+
+function showProgress(data) {
+  if (!data.label) {
+    progressDetail.style.display = "none";
+    return;
+  }
+  const elapsed = data.startedAt ? `経過時間: ${formatElapsed(data.startedAt)}` : "";
+  progressDetail.textContent = [data.label, elapsed].filter(Boolean).join(" / ");
+  progressDetail.style.display = "block";
+}
+
 // タイムアウトは「失敗」ではなく「確認をあきらめた」だけ。
 // サーバー側（HeyGen）は裏で処理を続けており、実際には完成することが多いため、
 // 呼び出し側はジョブIDを捨てずに、あとで再確認できるようにすること。
@@ -140,6 +160,7 @@ async function pollJob(jobId, timeoutMs) {
     if (data.status === "done") return data;
     if (data.status === "error") throw new Error(data.error || "動画生成に失敗しました");
     setStatus(generateStatus, "動画を生成しています...(素材が動画の場合は特に時間がかかります)");
+    showProgress(data);
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
   }
   throw new PollTimeoutError(
@@ -149,6 +170,7 @@ async function pollJob(jobId, timeoutMs) {
 
 function showResult(result) {
   setStatus(generateStatus, "完成しました！");
+  progressDetail.style.display = "none";
   resultVideo.src = result.videoUrl;
   resultVideo.style.display = "block";
   downloadLink.href = result.videoUrl;
