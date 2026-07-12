@@ -24,11 +24,34 @@ const stockInputLabel = document.getElementById("stock-input-label");
 const stockInputHint = document.getElementById("stock-input-hint");
 const scriptInput = document.getElementById("script-input");
 const generateBtn = document.getElementById("generate-btn");
+const checkStatusBtn = document.getElementById("check-status-btn");
 const generateStatus = document.getElementById("generate-status");
 const resultVideo = document.getElementById("result-video");
 const downloadLink = document.getElementById("download-link");
 
 let inviteCode = localStorage.getItem("ccc_reel_invite_code") || "";
+
+// 生成中にタイムアウト表示になっても、サーバー側（HeyGen）では処理が続いていて
+// 実際は完成していることが多い。そこで「再生成」で余計な課金をしないよう、
+// 直近のジョブIDをlocalStorageに保持し、いつでも状態だけ再確認できるようにする。
+const PENDING_JOB_KEY = "ccc_reel_pending_job";
+
+function savePendingJob(jobId, sourceType) {
+  localStorage.setItem(PENDING_JOB_KEY, JSON.stringify({ jobId, sourceType, ts: Date.now() }));
+}
+function clearPendingJob() {
+  localStorage.removeItem(PENDING_JOB_KEY);
+}
+function getPendingJob() {
+  try {
+    return JSON.parse(localStorage.getItem(PENDING_JOB_KEY));
+  } catch {
+    return null;
+  }
+}
+function refreshPendingJobUi() {
+  checkStatusBtn.style.display = getPendingJob() ? "block" : "none";
+}
 
 function setStatus(el, message, isError) {
   el.textContent = message || "";
@@ -72,6 +95,7 @@ if (inviteCode) {
   inviteInput.value = inviteCode;
   showApp();
 }
+refreshPendingJobUi();
 
 function currentSourceType() {
   return document.querySelector('input[name="source-type"]:checked').value;
@@ -104,6 +128,11 @@ async function uploadMedia(file) {
   return data.mediaUrl;
 }
 
+class PollTimeoutError extends Error {}
+
+// タイムアウトは「失敗」ではなく「確認をあきらめた」だけ。
+// サーバー側（HeyGen）は裏で処理を続けており、実際には完成することが多いため、
+// 呼び出し側はジョブIDを捨てずに、あとで再確認できるようにすること。
 async function pollJob(jobId, timeoutMs) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -113,8 +142,36 @@ async function pollJob(jobId, timeoutMs) {
     setStatus(generateStatus, "動画を生成しています...(素材が動画の場合は特に時間がかかります)");
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
   }
-  throw new Error("生成がタイムアウトしました。時間をおいて再度お試しください");
+  throw new PollTimeoutError(
+    "確認できる時間を超えました。生成自体は裏側で続いている可能性が高いです。しばらくしてから「前回の生成状況を確認する」を押してください（もう一度「動画を生成する」を押すと、二重に課金される新しい動画が作られてしまいます）"
+  );
 }
+
+function showResult(result) {
+  setStatus(generateStatus, "完成しました！");
+  resultVideo.src = result.videoUrl;
+  resultVideo.style.display = "block";
+  downloadLink.href = result.videoUrl;
+  downloadLink.style.display = "block";
+  clearPendingJob();
+  refreshPendingJobUi();
+}
+
+checkStatusBtn.addEventListener("click", async () => {
+  const pending = getPendingJob();
+  if (!pending) return;
+  checkStatusBtn.disabled = true;
+  try {
+    setStatus(generateStatus, "前回の生成状況を確認しています...");
+    const timeoutMs = pending.sourceType === "video" ? POLL_TIMEOUT_MS_VIDEO : POLL_TIMEOUT_MS_PHOTO;
+    const result = await pollJob(pending.jobId, timeoutMs);
+    showResult(result);
+  } catch (e) {
+    setStatus(generateStatus, e.message, true);
+  } finally {
+    checkStatusBtn.disabled = false;
+  }
+});
 
 generateBtn.addEventListener("click", async () => {
   const sourceType = currentSourceType();
@@ -153,16 +210,20 @@ generateBtn.addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ script, mediaUrl, sourceType, postMode, voiceGender, stockAvatarGender }),
     });
+    savePendingJob(jobId, sourceType);
+    refreshPendingJobUi();
 
     const timeoutMs = sourceType === "video" ? POLL_TIMEOUT_MS_VIDEO : POLL_TIMEOUT_MS_PHOTO;
     const result = await pollJob(jobId, timeoutMs);
-    setStatus(generateStatus, "完成しました！");
-    resultVideo.src = result.videoUrl;
-    resultVideo.style.display = "block";
-    downloadLink.href = result.videoUrl;
-    downloadLink.style.display = "block";
+    showResult(result);
   } catch (e) {
     setStatus(generateStatus, e.message, true);
+    // タイムアウト以外（原稿未入力・生成失敗など）の場合は、もう completed する見込みがないので
+    // pendingジョブを残さない（残すと「確認する」ボタンが意味のない状態で出続けてしまう）。
+    if (!(e instanceof PollTimeoutError)) {
+      clearPendingJob();
+      refreshPendingJobUi();
+    }
   } finally {
     generateBtn.disabled = false;
   }
