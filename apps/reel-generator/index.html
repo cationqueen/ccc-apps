@@ -27,9 +27,28 @@
       <span class="usage-badge" id="usage-badge"></span>
     </p>
 
-    <label for="photo-input">顔写真（1枚）</label>
-    <p class="hint">正面を向いた顔写真をアップロードしてください。この写真がそのまま喋る動画になります。</p>
+    <label>アバターの素材</label>
+    <p class="hint">写真1枚、ご自身が写った動画（15秒〜10分）、またはプロが撮影した既製アバターから選べます。</p>
+    <div class="radio-group">
+      <label><input type="radio" name="source-type" value="photo" checked /> 写真</label>
+      <label><input type="radio" name="source-type" value="video" /> 動画</label>
+      <label><input type="radio" name="source-type" value="stock" /> プロアバター（顔出し不要）</label>
+    </div>
+
+    <label for="photo-input" id="photo-input-label">顔写真（1枚）</label>
+    <p class="hint" id="photo-input-hint">正面を向いた顔写真をアップロードしてください。この写真がそのまま喋る動画になります。</p>
     <input type="file" id="photo-input" accept="image/jpeg,image/png" />
+
+    <label for="video-input" id="video-input-label" style="display:none;">動画素材</label>
+    <p class="hint" id="video-input-hint" style="display:none;">ご自身が写っている動画をアップロードしてください（15秒〜10分、100MBまで）。アバターの学習に写真より時間がかかります。</p>
+    <input type="file" id="video-input" accept="video/mp4,video/quicktime" style="display:none;" />
+
+    <label id="stock-input-label" style="display:none;">プロアバターの性別</label>
+    <p class="hint" id="stock-input-hint" style="display:none;">顔出しせずに、プロが撮影した既製アバターで動画を作れます。アップロード不要です。</p>
+    <div class="radio-group" id="stock-input" style="display:none;">
+      <label><input type="radio" name="stock-avatar-gender" value="female" checked /> 女性アバター</label>
+      <label><input type="radio" name="stock-avatar-gender" value="male" /> 男性アバター</label>
+    </div>
 
     <label for="script-input">原稿</label>
     <p class="hint">読み上げてほしい文章をそのまま入力してください（最大2000文字）</p>
