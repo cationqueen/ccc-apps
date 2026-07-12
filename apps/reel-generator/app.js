@@ -2,7 +2,7 @@
 const WORKER_URL = "https://ccc-reel-generator.cationqueen.workers.dev";
 
 const POLL_INTERVAL_MS = 4000;
-const POLL_TIMEOUT_MS_PHOTO = 5 * 60 * 1000;
+const POLL_TIMEOUT_MS_PHOTO = 8 * 60 * 1000; // 原稿が長いとHeyGen側のレンダリングが5分を超えることがあるため余裕を持たせる
 const POLL_TIMEOUT_MS_VIDEO = 15 * 60 * 1000; // 動画素材はアバター学習が長くなるため余裕を持たせる
 
 const loginCard = document.getElementById("login-card");
