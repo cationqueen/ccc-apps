@@ -28,11 +28,12 @@
     </p>
 
     <label>アバターの素材</label>
-    <p class="hint">写真1枚、ご自身が写った動画（15秒〜10分）、またはプロが撮影した既製アバターから選べます。</p>
+    <p class="hint">写真1枚、ご自身が写った動画（15秒〜10分）、プロが撮影した既製アバター、または登録済みの自分のアバターから選べます。</p>
     <div class="radio-group">
       <label><input type="radio" name="source-type" value="photo" checked /> 写真</label>
       <label><input type="radio" name="source-type" value="video" /> 動画</label>
       <label><input type="radio" name="source-type" value="stock" /> プロアバター（顔出し不要）</label>
+      <label><input type="radio" name="source-type" value="my_avatar" /> 自分のアバター（登録済み）</label>
     </div>
 
     <label for="photo-input" id="photo-input-label">顔写真（1枚）</label>
@@ -76,6 +77,27 @@
     <a id="download-link" href="#" download style="display:none;">
       <button style="margin-top:12px;">動画をダウンロード</button>
     </a>
+  </section>
+
+  <section id="settings-card" class="card" style="display:none;">
+    <label>自分のアバターを登録</label>
+    <p class="hint">
+      HeyGenのサイト(app.heygen.com)で、ご自身の動画から「動画アバター(digital twin)」を作成し、
+      同意動画の録画まで済ませてください。できあがったアバターIDをここに貼り付けると、
+      「自分のアバター」として選べるようになります。
+    </p>
+    <input type="text" id="avatar-id-input" placeholder="HeyGenのアバターID" />
+    <button id="register-avatar-btn">アバターを登録する</button>
+    <p id="avatar-register-status" class="status"></p>
+
+    <label style="margin-top:24px;">自分の声を登録（ボイスクローン）</label>
+    <p class="hint">
+      話している動画をアップロードすると、音声を抽出してHeyGenでボイスクローンを作成します
+      （完了まで数分かかることがあります）。
+    </p>
+    <input type="file" id="voice-sample-input" accept="video/mp4,video/quicktime" />
+    <button id="register-voice-btn">声を登録する</button>
+    <p id="voice-register-status" class="status"></p>
   </section>
 </main>
 
