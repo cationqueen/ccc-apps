@@ -171,15 +171,26 @@ async function pollJob(jobId, timeoutMs) {
   );
 }
 
-function showResult(result) {
+// <a download>は、リンク先が別ドメイン（今回はWorker側）だとブラウザに無視され、
+// ダウンロードではなく「開く」動作になってしまう。動画を一旦blobとして取得し、
+// 同一オリジン扱いのblob URLに変換することで、確実にダウンロードさせる。
+async function showResult(result) {
   setStatus(generateStatus, "完成しました！");
   progressDetail.style.display = "none";
   resultVideo.src = result.videoUrl;
   resultVideo.style.display = "block";
-  downloadLink.href = result.videoUrl;
-  downloadLink.style.display = "block";
   clearPendingJob();
   refreshPendingJobUi();
+
+  try {
+    const videoRes = await fetch(result.videoUrl);
+    const blob = await videoRes.blob();
+    downloadLink.href = URL.createObjectURL(blob);
+  } catch {
+    downloadLink.href = result.videoUrl; // 失敗時は従来通り（新タブで開くだけになる可能性あり）
+  }
+  downloadLink.setAttribute("download", "reel.mp4");
+  downloadLink.style.display = "block";
 }
 
 checkStatusBtn.addEventListener("click", async () => {
@@ -190,7 +201,7 @@ checkStatusBtn.addEventListener("click", async () => {
     setStatus(generateStatus, "前回の生成状況を確認しています...");
     const timeoutMs = pending.sourceType === "video" ? POLL_TIMEOUT_MS_VIDEO : POLL_TIMEOUT_MS_PHOTO;
     const result = await pollJob(pending.jobId, timeoutMs);
-    showResult(result);
+    await showResult(result);
   } catch (e) {
     setStatus(generateStatus, e.message, true);
   } finally {
@@ -240,7 +251,7 @@ generateBtn.addEventListener("click", async () => {
 
     const timeoutMs = sourceType === "video" ? POLL_TIMEOUT_MS_VIDEO : POLL_TIMEOUT_MS_PHOTO;
     const result = await pollJob(jobId, timeoutMs);
-    showResult(result);
+    await showResult(result);
   } catch (e) {
     setStatus(generateStatus, e.message, true);
     // タイムアウト以外（原稿未入力・生成失敗など）の場合は、もう completed する見込みがないので
