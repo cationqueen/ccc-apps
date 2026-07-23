@@ -29,6 +29,44 @@
   <div class="preset-tabs" id="preset-tabs">
     <!-- JS で生成 -->
   </div>
+
+  <!-- グループ操作ツールバー（選択中のグループに対して操作） -->
+  <div class="group-toolbar" id="group-toolbar">
+    <span class="gt-label">移動</span>
+    <button class="gt-btn" id="gt-move-left" title="前へ移動">◀</button>
+    <button class="gt-btn" id="gt-move-right" title="後ろへ移動">▶</button>
+    <span class="gt-spacer"></span>
+    <button class="gt-btn" id="gt-edit" title="選択中グループを編集">✎ 編集</button>
+    <button class="gt-btn gt-del" id="gt-delete" title="選択中グループを削除">🗑 削除</button>
+    <button class="gt-btn gt-add" id="gt-add" title="グループを追加">＋ 追加</button>
+  </div>
+
+  <!-- グループ編集フォーム（追加/編集時のみ表示） -->
+  <div class="preset-form" id="preset-form">
+    <div class="form-row">
+      <label>プリセット名</label>
+      <input id="f-name" type="text" placeholder="例：深作業タイム" maxlength="20">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>アイコン（絵文字）</label>
+        <input id="f-icon" type="text" placeholder="⏱" maxlength="4">
+      </div>
+      <div class="form-row">
+        <label>カラー</label>
+        <input id="f-color" type="color" value="#e67e22" style="height:38px;padding:2px 4px;">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>タイマー一覧　<small style="font-weight:400;">（時：分：秒）</small></label>
+      <div id="f-timer-list"></div>
+      <button type="button" id="f-add-timer" class="btn-add-timer">＋ タイマーを追加</button>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="form-save">保存</button>
+      <button class="btn-cancel" id="form-cancel">キャンセル</button>
+    </div>
+  </div>
 </div>
 
 <!-- Main App -->
@@ -67,6 +105,83 @@
     </div>
   </div>
 
+  <!-- 設定（メイン画面に常設・インライン） -->
+  <div class="settings-inline" id="settings-inline">
+
+    <!-- スケジュール欄と終了音欄を横2列で並べる -->
+    <div class="settings-row">
+
+      <!-- スケジュール（時計ベース） -->
+      <div class="inline-panel">
+        <button class="inline-toggle" data-target="panel-sched">🕐 スケジュール</button>
+        <div class="inline-body" id="panel-sched">
+          <label class="toggle-row">
+            <input type="checkbox" id="show-clock-chk">
+            <span>タイマー一覧に時刻を表示</span>
+          </label>
+          <div class="sched-grid">
+            <div class="form-row">
+              <label>開始時間 <small style="font-weight:400;">（任意）</small></label>
+              <div class="time-select-pair" id="start-time-group">
+                <select id="start-time-h" class="time-select"></select>
+                <span class="wheel-colon">:</span>
+                <select id="start-time-m" class="time-select"></select>
+                <button type="button" class="clock-clear" data-clear="start-time" title="未設定に戻す">✕</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>終了時間 <small style="font-weight:400;">（任意・24時以上＝翌日）</small></label>
+              <div class="time-select-pair" id="end-time-group">
+                <select id="end-time-h" class="time-select"></select>
+                <span class="wheel-colon">:</span>
+                <select id="end-time-m" class="time-select"></select>
+                <button type="button" class="clock-clear" data-clear="end-time" title="未設定に戻す">✕</button>
+              </div>
+            </div>
+          </div>
+          <p class="sched-note">
+            開始時間を設定すると、その時刻を基準にタイマーが時計に沿って進みます（開始前ならスタートで待機）。<br>
+            終了時間を設定すると、その時刻でちょうど止まります（最後のパートは短縮）。<br>
+            翌日にまたぐ場合は <b>25:00</b> のように24時以上で入力してください。空欄なら従来どおりのカウントダウンです。
+          </p>
+        </div>
+      </div>
+
+      <!-- 終了音 -->
+      <div class="inline-panel">
+        <button class="inline-toggle" data-target="panel-sound">🔔 終了音</button>
+        <div class="inline-body" id="panel-sound">
+          <div class="sound-options">
+            <button class="sound-opt selected" data-sound="beep">ビープ音</button>
+            <button class="sound-opt" data-sound="bell">ベル</button>
+            <button class="sound-opt" data-sound="none">なし</button>
+          </div>
+          <div class="volume-row">
+            <label for="volume-slider">音量</label>
+            <input type="range" id="volume-slider" min="0" max="100" value="80">
+            <span id="volume-label">80%</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- このアプリについて -->
+    <div class="inline-panel">
+      <button class="inline-toggle collapsed" data-target="panel-about">ℹ このアプリについて</button>
+      <div class="inline-body collapsed" id="panel-about">
+        <p style="font-size:12px;color:var(--muted);line-height:1.7;">
+          CustomTimer はグループ名＋タイマー一覧を自由に作れるシーケンスタイマーです。<br>
+          ポモドーロやスペシャルはデフォルトのグループです。時・分・秒単位で何個でも追加できます。<br>
+          設定はブラウザに保存されます。<br><br>
+          <a href="../../index.html" style="color:var(--accent);">CCCアプリ一覧</a> ／
+          お問い合わせ：<a href="mailto:cation.queen@gmail.com" style="color:var(--accent);">cation.queen@gmail.com</a>
+        </p>
+      </div>
+    </div>
+
+  </div>
+
 </main>
 
 <!-- フッター -->
@@ -74,101 +189,6 @@
   <a href="../../index.html">CCCアプリ一覧</a> ／
   &copy; 2026 Cation Creative Company
 </footer>
-
-<!-- 設定パネル -->
-<div class="settings-overlay" id="settings-overlay">
-  <div class="settings-panel">
-    <button class="settings-close" id="settings-close">✕</button>
-    <h2>⚙ 設定</h2>
-
-    <!-- プリセット管理 -->
-    <div class="settings-section">
-      <h3>タイマーグループ</h3>
-      <div class="preset-list" id="preset-list"></div>
-
-      <!-- 編集フォーム -->
-      <div class="preset-form" id="preset-form">
-        <div class="form-row">
-          <label>プリセット名</label>
-          <input id="f-name" type="text" placeholder="例：深作業タイム" maxlength="20">
-        </div>
-        <div class="form-grid">
-          <div class="form-row">
-            <label>アイコン（絵文字）</label>
-            <input id="f-icon" type="text" placeholder="⏱" maxlength="4">
-          </div>
-          <div class="form-row">
-            <label>カラー</label>
-            <input id="f-color" type="color" value="#e67e22" style="height:38px;padding:2px 4px;">
-          </div>
-        </div>
-        <div class="form-row">
-          <label>タイマー一覧　<small style="font-weight:400;">（時：分：秒）</small></label>
-          <div id="f-timer-list"></div>
-          <button type="button" id="f-add-timer" class="btn-add-timer">＋ タイマーを追加</button>
-        </div>
-        <div class="form-actions">
-          <button class="btn-save" id="form-save">保存</button>
-          <button class="btn-cancel" id="form-cancel">キャンセル</button>
-        </div>
-      </div>
-
-      <button class="btn-add-preset" id="btn-add-preset">＋ グループを追加</button>
-    </div>
-
-    <!-- スケジュール（時計ベース） -->
-    <div class="settings-section">
-      <h3>スケジュール（時計ベース）</h3>
-      <label class="toggle-row">
-        <input type="checkbox" id="show-clock-chk">
-        <span>タイマー一覧に時刻を表示</span>
-      </label>
-      <div class="sched-grid">
-        <div class="form-row">
-          <label>開始時間 <small style="font-weight:400;">（任意・例 9:00）</small></label>
-          <input type="text" id="start-time" placeholder="9:00" maxlength="5" inputmode="numeric">
-        </div>
-        <div class="form-row">
-          <label>終了時間 <small style="font-weight:400;">（任意・例 12:00 / 25:00）</small></label>
-          <input type="text" id="end-time" placeholder="12:00" maxlength="5" inputmode="numeric">
-        </div>
-      </div>
-      <p class="sched-note">
-        開始時間を設定すると、その時刻を基準にタイマーが時計に沿って進みます（開始前ならスタートで待機）。<br>
-        終了時間を設定すると、その時刻でちょうど止まります（最後のパートは短縮）。<br>
-        翌日にまたぐ場合は <b>25:00</b> のように24時以上で入力してください。空欄なら従来どおりのカウントダウンです。
-      </p>
-    </div>
-
-    <!-- サウンド -->
-    <div class="settings-section">
-      <h3>終了音</h3>
-      <div class="sound-options">
-        <button class="sound-opt selected" data-sound="beep">ビープ音</button>
-        <button class="sound-opt" data-sound="bell">ベル</button>
-        <button class="sound-opt" data-sound="none">なし</button>
-      </div>
-      <div class="volume-row">
-        <label for="volume-slider">音量</label>
-        <input type="range" id="volume-slider" min="0" max="100" value="80">
-        <span id="volume-label">80%</span>
-      </div>
-    </div>
-
-    <!-- 説明 -->
-    <div class="settings-section">
-      <h3>このアプリについて</h3>
-      <p style="font-size:12px;color:var(--muted);line-height:1.7;">
-        CustomTimer はグループ名＋タイマー一覧を自由に作れるシーケンスタイマーです。<br>
-        ポモドーロやスペシャルはデフォルトのグループです。時・分・秒単位で何個でも追加できます。<br>
-        設定はブラウザに保存されます。<br><br>
-        <a href="../../index.html" style="color:var(--accent);">CCCアプリ一覧</a> ／
-        お問い合わせ：<a href="mailto:cation.queen@gmail.com" style="color:var(--accent);">cation.queen@gmail.com</a>
-      </p>
-    </div>
-
-  </div>
-</div>
 
 <!-- 再開ダイアログ（スケジュール設定時のみ） -->
 <div class="resume-overlay" id="resume-overlay">

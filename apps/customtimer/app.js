@@ -19,12 +19,11 @@ const DEFAULT_GROUPS = [
     icon: '⭐',
     color: '#9b59b6',
     timers: [
-      { name: '作業①',   sec: 1500 },
+      { name: '作業①',   sec: 1800 },
       { name: '休憩',     sec: 300  },
       { name: '作業②',   sec: 1500 },
       { name: '休憩',     sec: 300  },
-      { name: '作業③',   sec: 1800 },
-      { name: '休憩',     sec: 300  },
+      { name: '作業③',   sec: 1500 },
       { name: '長い休憩', sec: 1200 },
     ],
   },
@@ -610,27 +609,59 @@ function render() {
   }
 
   renderTimerListPanel();
+  renderGroupToolbar();
+}
+
+// 選択中グループに対するツールバーの状態（移動可否・編集/削除の表示）を更新
+function renderGroupToolbar() {
+  const idx       = state.groups.findIndex(g => g.id === state.currentId);
+  const isDefault = DEFAULT_GROUPS.some(d => d.id === state.currentId);
+  const left  = document.getElementById('gt-move-left');
+  const right = document.getElementById('gt-move-right');
+  const edit  = document.getElementById('gt-edit');
+  const del   = document.getElementById('gt-delete');
+  if (left)  left.disabled  = idx <= 0;
+  if (right) right.disabled = idx >= state.groups.length - 1;
+  if (edit)  edit.style.display = isDefault ? 'none' : '';
+  if (del)   del.style.display  = isDefault ? 'none' : '';
 }
 
 function renderTimerListPanel() {
   const body = document.getElementById('timer-list-body');
   if (!body) return;
   const g = getGroup(state.currentId);
+  const endMs = isScheduled() ? effectiveEndMs() : null;  // 終了時間（設定時のみ）
   body.innerHTML = '';
-  g.timers.forEach((t, i) => {
+  for (let i = 0; i < g.timers.length; i++) {
+    const t = g.timers[i];
+    const rowStart = rowClockMs(i);
+    let durMs = t.sec * 1000;
+    let truncated = false;
+
+    // 終了時間が設定されていれば、時刻・長さを終了時間に合わせて調整
+    if (endMs !== null) {
+      if (rowStart >= endMs) break;                 // 終了時間を過ぎるパートは表示しない
+      if (rowStart + durMs > endMs) {               // このパートで終了時間に到達 → 短縮
+        durMs = endMs - rowStart;
+        truncated = true;
+      }
+    }
+
     const isActive = !state.waiting && !state.finished && i === state.timerIdx;
     const row = document.createElement('div');
     row.className = 'tl-row' + (isActive ? ' active' : '');
     const clockHtml = state.showClock
-      ? `<span class="tl-clock">${fmtClock(rowClockMs(i))}</span>` : '';
+      ? `<span class="tl-clock">${fmtClock(rowStart)}</span>` : '';
+    const durText = fmtSec(Math.round(durMs / 1000)) + (truncated ? ' <span class="tl-trunc">(短縮)</span>' : '');
     row.innerHTML = `
       ${clockHtml}
       <span class="tl-step">${i + 1}</span>
       <span class="tl-name">${escHtml(t.name)}</span>
-      <span class="tl-dur">${fmtSec(t.sec)}</span>
+      <span class="tl-dur">${durText}</span>
     `;
     body.appendChild(row);
-  });
+    if (truncated) break;                           // 短縮パートで打ち切り
+  }
   const activeRow = body.querySelector('.tl-row.active');
   if (activeRow) activeRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
@@ -651,44 +682,6 @@ function renderGroupTabs() {
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────────
 function renderSettings() {
-  const list = document.getElementById('preset-list');
-  list.innerHTML = '';
-  const isDefault = id => DEFAULT_GROUPS.some(d => d.id === id);
-
-  state.groups.forEach((g, idx) => {
-    const summary = g.timers.map(t => `${t.name}(${fmtSec(t.sec)})`).join(' → ');
-    const first = idx === 0;
-    const last  = idx === state.groups.length - 1;
-
-    const item = document.createElement('div');
-    item.className = 'preset-item';
-    item.innerHTML = `
-      <div class="pi-dot" style="background:${g.color}"></div>
-      <div class="pi-info">
-        <div class="pi-name">${g.icon} ${g.name}</div>
-        <div class="pi-times">${summary}</div>
-      </div>
-      <div class="pi-actions">
-        <div class="pi-move">
-          <button class="pi-btn move-up" data-id="${g.id}" ${first ? 'disabled' : ''}>↑</button>
-          <button class="pi-btn move-dn" data-id="${g.id}" ${last  ? 'disabled' : ''}>↓</button>
-        </div>
-        ${!isDefault(g.id) ? `<button class="pi-btn edit" data-id="${g.id}">編集</button>` : ''}
-        ${!isDefault(g.id) ? `<button class="pi-btn delete" data-id="${g.id}">削除</button>` : ''}
-        ${isDefault(g.id)  ? `<span class="pi-lock">🔒</span>` : ''}
-      </div>`;
-    list.appendChild(item);
-  });
-
-  list.querySelectorAll('.pi-btn.move-up').forEach(btn =>
-    btn.addEventListener('click', () => moveGroup(btn.dataset.id, -1)));
-  list.querySelectorAll('.pi-btn.move-dn').forEach(btn =>
-    btn.addEventListener('click', () => moveGroup(btn.dataset.id, +1)));
-  list.querySelectorAll('.pi-btn.edit').forEach(btn =>
-    btn.addEventListener('click', () => openGroupForm(btn.dataset.id)));
-  list.querySelectorAll('.pi-btn.delete').forEach(btn =>
-    btn.addEventListener('click', () => deleteGroup(btn.dataset.id)));
-
   document.querySelectorAll('.sound-opt').forEach(el =>
     el.classList.toggle('selected', el.dataset.sound === state.sound));
 
@@ -702,10 +695,59 @@ function renderSettings() {
   // スケジュール設定欄
   const sc = document.getElementById('show-clock-chk');
   if (sc) sc.checked = state.showClock;
-  const st = document.getElementById('start-time');
-  if (st) st.value = state.startStr;
-  const et = document.getElementById('end-time');
-  if (et) et.value = state.endStr;
+  setClockFields('start-time', state.startStr);
+  setClockFields('end-time', state.endStr);
+}
+
+// "H:MM" 文字列 → 時/分の2つのプルダウンに反映（空文字なら「--」未設定）
+function setClockFields(prefix, str) {
+  const hEl = document.getElementById(prefix + '-h');
+  const mEl = document.getElementById(prefix + '-m');
+  if (!hEl || !mEl) return;
+  const m = str ? String(str).trim().match(/^(\d{1,2}):(\d{1,2})$/) : null;
+  hEl.value = m ? m[1] : '';
+  mEl.value = m ? m[2] : '';
+}
+
+// <select>に「--」（未設定）＋0〜maxの選択肢を詰める
+function buildTimeSelect(selectEl, max) {
+  selectEl.innerHTML = '<option value="">--</option>';
+  for (let i = 0; i <= max; i++) {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = String(i).padStart(2, '0');
+    selectEl.appendChild(opt);
+  }
+}
+
+// 開始/終了時間欄（時・分プルダウン2つ＋クリアボタン）の配線。
+// onChange(str) は "H:MM" 形式（未設定なら空文字）で呼ばれる。
+function wireClockSpinner(prefix, onChange) {
+  const hEl = document.getElementById(prefix + '-h');
+  const mEl = document.getElementById(prefix + '-m');
+  if (!hEl || !mEl) return;
+
+  buildTimeSelect(hEl, 29);
+  buildTimeSelect(mEl, 59);
+
+  const commit = () => {
+    // 時・分どちらか一方でも未選択なら、そのスケジュールはオフ扱いにする（片方だけ設定した状態で
+    // 自動的に「00分」等で有効化されるのを防ぐ）
+    if (hEl.value === '' || mEl.value === '') { onChange(''); return; }
+    const h = parseInt(hEl.value) || 0;
+    const m = parseInt(mEl.value) || 0;
+    onChange(`${h}:${String(m).padStart(2, '0')}`);
+  };
+  hEl.addEventListener('change', commit);
+  mEl.addEventListener('change', commit);
+
+  const clearBtn = document.querySelector(`.clock-clear[data-clear="${prefix}"]`);
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      hEl.value = ''; mEl.value = '';
+      onChange('');
+    });
+  }
 }
 
 // ── GROUP FORM ────────────────────────────────────────────────────────────────
@@ -729,6 +771,18 @@ function readFormTimers() {
   }));
 }
 
+// スピナー欄1つ分のHTML（時/分/秒 共通）
+function spinField(cls, val, min, max) {
+  return `
+    <div class="tr-numgroup">
+      <input type="number" class="${cls}" min="${min}" max="${max}" value="${val}" inputmode="numeric">
+      <span class="tr-spin">
+        <button type="button" class="tr-spin-btn tr-spin-up" data-cls="${cls}" data-min="${min}" data-max="${max}" title="+1">▲</button>
+        <button type="button" class="tr-spin-btn tr-spin-down" data-cls="${cls}" data-min="${min}" data-max="${max}" title="-1">▼</button>
+      </span>
+    </div>`;
+}
+
 function renderFormTimers(timers) {
   const container = document.getElementById('f-timer-list');
   container.innerHTML = '';
@@ -738,11 +792,11 @@ function renderFormTimers(timers) {
     row.innerHTML = `
       <input type="text" class="tr-name" placeholder="タイマー名" value="${escHtml(t.name)}" maxlength="20">
       <div class="tr-time">
-        <input type="number" class="tr-h" min="0" max="99" value="${t.h}">
+        ${spinField('tr-h', t.h, 0, 99)}
         <span class="tr-sep">:</span>
-        <input type="number" class="tr-m" min="0" max="59" value="${t.m}">
+        ${spinField('tr-m', t.m, 0, 59)}
         <span class="tr-sep">:</span>
-        <input type="number" class="tr-s" min="0" max="59" value="${t.s}">
+        ${spinField('tr-s', t.s, 0, 59)}
       </div>
       <button class="tr-del" title="削除">✕</button>
     `;
@@ -752,12 +806,36 @@ function renderFormTimers(timers) {
       if (!current.length) current.push({ name: '', h: 0, m: 0, s: 30 });
       renderFormTimers(current);
     });
+    // スピナーボタン（▲▼）：クリック/長押しで増減、59↔0や0↔59でロールオーバー
+    row.querySelectorAll('.tr-spin-btn').forEach(btn => {
+      const step = () => {
+        const input = row.querySelector('.' + btn.dataset.cls);
+        const min = parseInt(btn.dataset.min);
+        const max = parseInt(btn.dataset.max);
+        let val = parseInt(input.value);
+        if (isNaN(val)) val = min;
+        val += btn.classList.contains('tr-spin-up') ? 1 : -1;
+        if (val > max) val = min;
+        if (val < min) val = max;
+        input.value = val;
+      };
+      let holdTimer = null, repeatTimer = null;
+      btn.addEventListener('click', step);
+      btn.addEventListener('pointerdown', () => {
+        holdTimer = setTimeout(() => { repeatTimer = setInterval(step, 90); }, 400);
+      });
+      const stopHold = () => { clearTimeout(holdTimer); clearInterval(repeatTimer); };
+      btn.addEventListener('pointerup', stopHold);
+      btn.addEventListener('pointerleave', stopHold);
+      btn.addEventListener('pointercancel', stopHold);
+    });
     container.appendChild(row);
   });
 }
 
 function openGroupForm(id) {
-  document.getElementById('preset-form').classList.add('open');
+  const form = document.getElementById('preset-form');
+  form.classList.add('open');
   state.editingId = id || null;
   if (id) {
     const g = getGroup(id);
@@ -774,6 +852,7 @@ function openGroupForm(id) {
       { name: '休憩', h: 0, m: 5,  s: 0 },
     ]);
   }
+  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function closeGroupForm() {
@@ -823,11 +902,12 @@ function moveGroup(id, dir) {
 }
 
 function deleteGroup(id) {
-  state.groups = state.groups.filter(g => g.id !== id);
+  const g = getGroup(id);
+  if (!confirm(`「${g.name}」を削除しますか？`)) return;
+  state.groups = state.groups.filter(x => x.id !== id);
   if (state.currentId === id) resetToGroup(state.groups[0].id);
   saveGroups();
   renderGroupTabs();
-  renderSettings();
   render();
 }
 
@@ -843,6 +923,7 @@ function init() {
   resetToGroup(state.groups[0].id);
   renderGroupTabs();
   render();
+  renderSettings();   // メイン画面に常設した設定欄を初期表示
 
   document.getElementById('ring-progress').style.strokeDasharray  = CIRCUMFERENCE;
   document.getElementById('ring-progress').style.strokeDashoffset = 0;
@@ -855,18 +936,28 @@ function init() {
   document.getElementById('skip-btn').addEventListener('click', skipTimer);
   document.getElementById('notif-banner').addEventListener('click', requestNotifPerm);
 
+  // ⚙ ボタン：メイン画面下部の設定エリアへスクロール
   document.getElementById('settings-btn').addEventListener('click', () => {
-    renderSettings();
-    document.getElementById('settings-overlay').classList.add('open');
-  });
-  document.getElementById('settings-close').addEventListener('click', () =>
-    document.getElementById('settings-overlay').classList.remove('open'));
-  document.getElementById('settings-overlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget)
-      document.getElementById('settings-overlay').classList.remove('open');
+    document.getElementById('settings-inline').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  document.getElementById('btn-add-preset').addEventListener('click', () => openGroupForm(null));
+  // インライン設定パネルの折りたたみ開閉
+  document.querySelectorAll('.inline-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const body = document.getElementById(btn.dataset.target);
+      const willOpen = btn.classList.contains('collapsed');
+      btn.classList.toggle('collapsed', !willOpen);
+      if (body) body.classList.toggle('collapsed', !willOpen);
+    });
+  });
+
+  // グループ操作ツールバー（選択中グループに対して）
+  document.getElementById('gt-add').addEventListener('click', () => openGroupForm(null));
+  document.getElementById('gt-edit').addEventListener('click', () => openGroupForm(state.currentId));
+  document.getElementById('gt-delete').addEventListener('click', () => deleteGroup(state.currentId));
+  document.getElementById('gt-move-left').addEventListener('click', () => moveGroup(state.currentId, -1));
+  document.getElementById('gt-move-right').addEventListener('click', () => moveGroup(state.currentId, +1));
+
   document.getElementById('form-save').addEventListener('click', saveGroupForm);
   document.getElementById('form-cancel').addEventListener('click', closeGroupForm);
 
@@ -905,16 +996,11 @@ function init() {
     localStorage.setItem(SHOWCLOCK_KEY, state.showClock);
     renderTimerListPanel();
   });
-  document.getElementById('start-time').addEventListener('input', e => {
-    state.startStr = e.target.value.trim();
-    localStorage.setItem(START_KEY, state.startStr);
-    render();
-  });
-  document.getElementById('end-time').addEventListener('input', e => {
-    state.endStr = e.target.value.trim();
-    localStorage.setItem(END_KEY, state.endStr);
-    render();
-  });
+  wireClockSpinner('start-time', v => { state.startStr = v; localStorage.setItem(START_KEY, v); render(); });
+  wireClockSpinner('end-time',   v => { state.endStr   = v; localStorage.setItem(END_KEY, v);   render(); });
+  // buildTimeSelectでプルダウンの選択肢を再生成した直後なので、保存されていた開始/終了時間を改めて反映する
+  setClockFields('start-time', state.startStr);
+  setClockFields('end-time', state.endStr);
 
   // ── 再開ダイアログ ──
   document.getElementById('resume-clock').addEventListener('click', () => {
