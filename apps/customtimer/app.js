@@ -76,7 +76,7 @@ const state = {
   editingId: null,
 
   // ── スケジュール（時計ベース）関連 ──
-  showClock: true,    // タイマー一覧に時刻を表示
+  showClock: false,   // タイマー一覧に時刻を表示（デフォルトはオフ）
   startStr: '',       // 開始時間 "9:00" / "25:00"（空=なし）
   endStr: '',         // 終了時間（空=なし）
   started: false,     // 実行開始済み（一時停止中も true）
@@ -916,7 +916,7 @@ function init() {
   state.groups    = loadGroups();
   state.sound     = localStorage.getItem(SOUND_KEY)  || 'beep';
   state.volume    = parseFloat(localStorage.getItem(VOLUME_KEY) ?? '0.8');
-  state.showClock = localStorage.getItem(SHOWCLOCK_KEY) !== 'false';
+  state.showClock = localStorage.getItem(SHOWCLOCK_KEY) === 'true';
   state.startStr  = localStorage.getItem(START_KEY) || '';
   state.endStr    = localStorage.getItem(END_KEY)   || '';
 
