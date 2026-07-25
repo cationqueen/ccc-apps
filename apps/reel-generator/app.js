@@ -4,6 +4,7 @@ const WORKER_URL = "https://ccc-reel-generator.cationqueen.workers.dev";
 const POLL_INTERVAL_MS = 4000;
 const POLL_TIMEOUT_MS_PHOTO = 8 * 60 * 1000; // 原稿が長いとHeyGen側のレンダリングが5分を超えることがあるため余裕を持たせる
 const POLL_TIMEOUT_MS_VIDEO = 15 * 60 * 1000; // 動画素材はアバター学習が長くなるため余裕を持たせる
+const POLL_TIMEOUT_MS_GESTURE = 60 * 60 * 1000; // 振り付け（ローカルWan2.2）は数十分〜1時間かかることがある
 
 const loginCard = document.getElementById("login-card");
 const appCard = document.getElementById("app-card");
@@ -23,6 +24,8 @@ const videoInputHint = document.getElementById("video-input-hint");
 const stockInput = document.getElementById("stock-input");
 const stockInputLabel = document.getElementById("stock-input-label");
 const stockInputHint = document.getElementById("stock-input-hint");
+const gestureInputWrap = document.getElementById("gesture-input-wrap");
+const gestureInput = document.getElementById("gesture-input");
 const scriptInput = document.getElementById("script-input");
 const generateBtn = document.getElementById("generate-btn");
 const checkStatusBtn = document.getElementById("check-status-btn");
@@ -38,8 +41,11 @@ let inviteCode = localStorage.getItem("ccc_reel_invite_code") || "";
 // 直近のジョブIDをlocalStorageに保持し、いつでも状態だけ再確認できるようにする。
 const PENDING_JOB_KEY = "ccc_reel_pending_job";
 
-function savePendingJob(jobId, sourceType) {
-  localStorage.setItem(PENDING_JOB_KEY, JSON.stringify({ jobId, sourceType, ts: Date.now() }));
+function savePendingJob(jobId, sourceType, isGesture) {
+  localStorage.setItem(
+    PENDING_JOB_KEY,
+    JSON.stringify({ jobId, sourceType, isGesture: Boolean(isGesture), ts: Date.now() })
+  );
 }
 function clearPendingJob() {
   localStorage.removeItem(PENDING_JOB_KEY);
@@ -119,6 +125,7 @@ document.querySelectorAll('input[name="source-type"]').forEach((radio) => {
     stockInputLabel.style.display = showStock ? "block" : "none";
     stockInputHint.style.display = showStock ? "block" : "none";
     stockInput.style.display = showStock ? "flex" : "none";
+    gestureInputWrap.style.display = showPhoto ? "block" : "none";
     // my_avatar は追加の入力欄が不要（登録済みのIDをそのまま使う）
   });
 });
@@ -199,7 +206,11 @@ checkStatusBtn.addEventListener("click", async () => {
   checkStatusBtn.disabled = true;
   try {
     setStatus(generateStatus, "前回の生成状況を確認しています...");
-    const timeoutMs = pending.sourceType === "video" ? POLL_TIMEOUT_MS_VIDEO : POLL_TIMEOUT_MS_PHOTO;
+    const timeoutMs = pending.isGesture
+      ? POLL_TIMEOUT_MS_GESTURE
+      : pending.sourceType === "video"
+        ? POLL_TIMEOUT_MS_VIDEO
+        : POLL_TIMEOUT_MS_PHOTO;
     const result = await pollJob(pending.jobId, timeoutMs);
     await showResult(result);
   } catch (e) {
@@ -217,6 +228,7 @@ generateBtn.addEventListener("click", async () => {
   const postMode = document.querySelector('input[name="post-mode"]:checked').value;
   const voiceGender = document.querySelector('input[name="voice-gender"]:checked').value;
   const stockAvatarGender = document.querySelector('input[name="stock-avatar-gender"]:checked')?.value;
+  const gesturePrompt = sourceType === "photo" ? gestureInput.value.trim() : "";
 
   if (needsUpload && !file) {
     return setStatus(
@@ -244,12 +256,16 @@ generateBtn.addEventListener("click", async () => {
     const { jobId } = await apiFetch("/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ script, mediaUrl, sourceType, postMode, voiceGender, stockAvatarGender }),
+      body: JSON.stringify({ script, mediaUrl, sourceType, postMode, voiceGender, stockAvatarGender, gesturePrompt }),
     });
-    savePendingJob(jobId, sourceType);
+    savePendingJob(jobId, sourceType, Boolean(gesturePrompt));
     refreshPendingJobUi();
 
-    const timeoutMs = sourceType === "video" ? POLL_TIMEOUT_MS_VIDEO : POLL_TIMEOUT_MS_PHOTO;
+    const timeoutMs = gesturePrompt
+      ? POLL_TIMEOUT_MS_GESTURE
+      : sourceType === "video"
+        ? POLL_TIMEOUT_MS_VIDEO
+        : POLL_TIMEOUT_MS_PHOTO;
     const result = await pollJob(jobId, timeoutMs);
     await showResult(result);
   } catch (e) {
