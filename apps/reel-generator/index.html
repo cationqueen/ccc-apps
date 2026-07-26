@@ -40,6 +40,16 @@
     <p class="hint" id="photo-input-hint">正面を向いた顔写真をアップロードしてください。この写真がそのまま喋る動画になります。</p>
     <input type="file" id="photo-input" accept="image/jpeg,image/png" />
 
+    <div id="gesture-input-wrap">
+      <label for="gesture-input">振り付け（ジェスチャー）を追加（任意）</label>
+      <p class="hint">
+        身振り手振りの指示を入力すると、体の動きも生成します（例:「手を振りながら笑顔で話す」）。
+        <strong>⚠️ ローカルAIのみ対応・非常に時間がかかります（数十分〜1時間程度が目安）。</strong>
+        空欄なら通常通りの高速生成（口の動きのみ）になります。
+      </p>
+      <input type="text" id="gesture-input" placeholder="例: 手を振りながら笑顔で話す" />
+    </div>
+
     <label for="video-input" id="video-input-label" style="display:none;">動画素材</label>
     <p class="hint" id="video-input-hint" style="display:none;">ご自身が写っている動画をアップロードしてください（15秒〜10分、100MBまで）。アバターの学習に写真より時間がかかります。</p>
     <input type="file" id="video-input" accept="video/mp4,video/quicktime" style="display:none;" />
