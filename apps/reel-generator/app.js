@@ -182,7 +182,15 @@ async function pollJob(jobId, timeoutMs) {
 // ダウンロードではなく「開く」動作になってしまう。動画を一旦blobとして取得し、
 // 同一オリジン扱いのblob URLに変換することで、確実にダウンロードさせる。
 async function showResult(result) {
-  setStatus(generateStatus, "完成しました！");
+  if (result.naturalnessFlagged) {
+    setStatus(
+      generateStatus,
+      "完成しました（AIチェックで表情や顔に不自然な点が見つかりました。動画を確認し、気になる場合は再生成をお試しください）",
+      true
+    );
+  } else {
+    setStatus(generateStatus, "完成しました！");
+  }
   progressDetail.style.display = "none";
   resultVideo.src = result.videoUrl;
   resultVideo.style.display = "block";
