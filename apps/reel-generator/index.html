@@ -67,11 +67,14 @@
 
     <label>声（TTSの音声）</label>
     <p class="hint">顔写真の性別と音声は連動しません。ここで選んだ声が使われます。</p>
-    <div class="radio-group">
+    <div class="radio-group" id="voice-gender-group">
       <label><input type="radio" name="voice-gender" value="female" checked /> 女性の声</label>
       <label><input type="radio" name="voice-gender" value="male" /> 男性の声</label>
-      <label><input type="radio" name="voice-gender" value="custom" /> 自分の声（登録済み）</label>
     </div>
+    <div class="radio-group" id="custom-voice-list"></div>
+    <p class="hint" id="custom-voice-empty-hint" style="display:none;">
+      登録済みの声がありません。下の「自分の声を登録」から登録してください。
+    </p>
 
     <label>投稿方法</label>
     <div class="radio-group">
@@ -101,11 +104,12 @@
     <button id="register-avatar-btn">アバターを登録する</button>
     <p id="avatar-register-status" class="status"></p>
 
-    <label style="margin-top:24px;">自分の声を登録（ボイスクローン）</label>
+    <label style="margin-top:24px;">声を登録（ボイスクローン）</label>
     <p class="hint">
       話している動画をアップロードすると、音声を抽出してHeyGenでボイスクローンを作成します
-      （完了まで数分かかることがあります）。
+      （完了まで数分かかることがあります）。複数人分登録して、生成時に選べます。
     </p>
+    <input type="text" id="voice-label-input" placeholder="声の名前（例: 自分の声、妻の声）" />
     <input type="file" id="voice-sample-input" accept="video/mp4,video/quicktime" />
     <button id="register-voice-btn">声を登録する</button>
     <p id="voice-register-status" class="status"></p>

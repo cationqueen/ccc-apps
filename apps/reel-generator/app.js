@@ -84,6 +84,7 @@ function showApp() {
   appCard.style.display = "block";
   settingsCard.style.display = "block";
   userLabel.textContent = inviteCode;
+  refreshVoiceList().catch(() => {});
 }
 
 loginBtn.addEventListener("click", async () => {
@@ -234,7 +235,10 @@ generateBtn.addEventListener("click", async () => {
   const file = sourceType === "video" ? videoInput.files[0] : photoInput.files[0];
   const script = scriptInput.value.trim();
   const postMode = document.querySelector('input[name="post-mode"]:checked').value;
-  const voiceGender = document.querySelector('input[name="voice-gender"]:checked').value;
+  const voiceChoice = document.querySelector('input[name="voice-gender"]:checked').value;
+  const isCustomVoice = voiceChoice.startsWith("custom:");
+  const voiceGender = isCustomVoice ? "custom" : voiceChoice;
+  const customVoiceId = isCustomVoice ? voiceChoice.split(":")[1] : undefined;
   const stockAvatarGender = document.querySelector('input[name="stock-avatar-gender"]:checked')?.value;
   const gesturePrompt = sourceType === "photo" ? gestureInput.value.trim() : "";
 
@@ -264,7 +268,7 @@ generateBtn.addEventListener("click", async () => {
     const { jobId } = await apiFetch("/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ script, mediaUrl, sourceType, postMode, voiceGender, stockAvatarGender, gesturePrompt }),
+      body: JSON.stringify({ script, mediaUrl, sourceType, postMode, voiceGender, customVoiceId, stockAvatarGender, gesturePrompt }),
     });
     savePendingJob(jobId, sourceType, Boolean(gesturePrompt));
     refreshPendingJobUi();
@@ -313,16 +317,40 @@ registerAvatarBtn.addEventListener("click", async () => {
 });
 
 const voiceSampleInput = document.getElementById("voice-sample-input");
+const voiceLabelInput = document.getElementById("voice-label-input");
 const registerVoiceBtn = document.getElementById("register-voice-btn");
 const voiceRegisterStatus = document.getElementById("voice-register-status");
+const customVoiceList = document.getElementById("custom-voice-list");
+const customVoiceEmptyHint = document.getElementById("custom-voice-empty-hint");
 
-async function pollVoiceStatus() {
+// 登録済みの声を一覧取得し、生成画面の選択肢（ラジオボタン）として描画する
+async function refreshVoiceList() {
+  const data = await apiFetch("/voice-status");
+  const voices = data.voices || [];
+  customVoiceList.innerHTML = "";
+  const usable = voices.filter((v) => v.status === "complete");
+  customVoiceEmptyHint.style.display = usable.length ? "none" : "block";
+  for (const v of usable) {
+    const label = document.createElement("label");
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "voice-gender";
+    input.value = `custom:${v.id}`;
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(` ${v.label}`));
+    customVoiceList.appendChild(label);
+  }
+  return voices;
+}
+
+async function pollVoiceStatus(voiceId) {
   const timeoutMs = 5 * 60 * 1000;
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const data = await apiFetch("/voice-status");
-    if (data.status === "complete") return data;
-    if (data.status === "error") throw new Error("ボイスクローンの作成に失敗しました");
+    const voices = await refreshVoiceList();
+    const voice = voices.find((v) => v.id === voiceId);
+    if (voice?.status === "complete") return voice;
+    if (voice?.status === "error") throw new Error("ボイスクローンの作成に失敗しました");
     setStatus(voiceRegisterStatus, "声を登録しています...(数分かかることがあります)");
     await new Promise((r) => setTimeout(r, 5000));
   }
@@ -332,18 +360,21 @@ async function pollVoiceStatus() {
 registerVoiceBtn.addEventListener("click", async () => {
   const file = voiceSampleInput.files[0];
   if (!file) return setStatus(voiceRegisterStatus, "話している動画をアップロードしてください", true);
+  const label = voiceLabelInput.value.trim();
   registerVoiceBtn.disabled = true;
   try {
     setStatus(voiceRegisterStatus, "動画をアップロードしています...");
     const mediaUrl = await uploadMedia(file);
     setStatus(voiceRegisterStatus, "音声を抽出してボイスクローンを作成しています...");
-    await apiFetch("/register-voice", {
+    const { id } = await apiFetch("/register-voice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mediaUrl }),
+      body: JSON.stringify({ mediaUrl, label }),
     });
-    await pollVoiceStatus();
+    await pollVoiceStatus(id);
     setStatus(voiceRegisterStatus, "声の登録が完了しました。");
+    voiceLabelInput.value = "";
+    voiceSampleInput.value = "";
   } catch (e) {
     setStatus(voiceRegisterStatus, e.message, true);
   } finally {
