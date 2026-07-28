@@ -41,10 +41,10 @@ let inviteCode = localStorage.getItem("ccc_reel_invite_code") || "";
 // 直近のジョブIDをlocalStorageに保持し、いつでも状態だけ再確認できるようにする。
 const PENDING_JOB_KEY = "ccc_reel_pending_job";
 
-function savePendingJob(jobId, sourceType, isGesture) {
+function savePendingJob(jobId, sourceType, isGesture, qualityLevel) {
   localStorage.setItem(
     PENDING_JOB_KEY,
-    JSON.stringify({ jobId, sourceType, isGesture: Boolean(isGesture), ts: Date.now() })
+    JSON.stringify({ jobId, sourceType, isGesture: Boolean(isGesture), qualityLevel: qualityLevel || "standard", ts: Date.now() })
   );
 }
 function clearPendingJob() {
@@ -183,12 +183,13 @@ async function pollJob(jobId, timeoutMs) {
 // ダウンロードではなく「開く」動作になってしまう。動画を一旦blobとして取得し、
 // 同一オリジン扱いのblob URLに変換することで、確実にダウンロードさせる。
 async function showResult(result) {
+  const notices = [];
+  if (result.photoWarnings?.length) notices.push(...result.photoWarnings);
   if (result.naturalnessFlagged) {
-    setStatus(
-      generateStatus,
-      "完成しました（AIチェックで表情や顔に不自然な点が見つかりました。動画を確認し、気になる場合は再生成をお試しください）",
-      true
-    );
+    notices.push("AIチェックで表情や顔に不自然な点が見つかりました。動画を確認し、気になる場合は再生成をお試しください。");
+  }
+  if (notices.length) {
+    setStatus(generateStatus, `完成しました（${notices.join(" / ")}）`, true);
   } else {
     setStatus(generateStatus, "完成しました！");
   }
@@ -215,8 +216,9 @@ checkStatusBtn.addEventListener("click", async () => {
   checkStatusBtn.disabled = true;
   try {
     setStatus(generateStatus, "前回の生成状況を確認しています...");
+    const pendingQualityMultiplier = { standard: 1, high: 2, max: 3.5 }[pending.qualityLevel] || 1;
     const timeoutMs = pending.isGesture
-      ? POLL_TIMEOUT_MS_GESTURE
+      ? POLL_TIMEOUT_MS_GESTURE * pendingQualityMultiplier
       : pending.sourceType === "video"
         ? POLL_TIMEOUT_MS_VIDEO
         : POLL_TIMEOUT_MS_PHOTO;
@@ -241,6 +243,7 @@ generateBtn.addEventListener("click", async () => {
   const customVoiceId = isCustomVoice ? voiceChoice.split(":")[1] : undefined;
   const stockAvatarGender = document.querySelector('input[name="stock-avatar-gender"]:checked')?.value;
   const gesturePrompt = sourceType === "photo" ? gestureInput.value.trim() : "";
+  const qualityLevel = document.querySelector('input[name="quality-level"]:checked')?.value || "standard";
 
   if (needsUpload && !file) {
     return setStatus(
@@ -268,13 +271,24 @@ generateBtn.addEventListener("click", async () => {
     const { jobId } = await apiFetch("/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ script, mediaUrl, sourceType, postMode, voiceGender, customVoiceId, stockAvatarGender, gesturePrompt }),
+      body: JSON.stringify({
+        script,
+        mediaUrl,
+        sourceType,
+        postMode,
+        voiceGender,
+        customVoiceId,
+        stockAvatarGender,
+        gesturePrompt,
+        qualityLevel,
+      }),
     });
-    savePendingJob(jobId, sourceType, Boolean(gesturePrompt));
+    savePendingJob(jobId, sourceType, Boolean(gesturePrompt), qualityLevel);
     refreshPendingJobUi();
 
+    const qualityTimeoutMultiplier = { standard: 1, high: 2, max: 3.5 }[qualityLevel] || 1;
     const timeoutMs = gesturePrompt
-      ? POLL_TIMEOUT_MS_GESTURE
+      ? POLL_TIMEOUT_MS_GESTURE * qualityTimeoutMultiplier
       : sourceType === "video"
         ? POLL_TIMEOUT_MS_VIDEO
         : POLL_TIMEOUT_MS_PHOTO;

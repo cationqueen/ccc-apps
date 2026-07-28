@@ -48,6 +48,17 @@
         空欄なら通常通りの高速生成（口の動きのみ）になります。
       </p>
       <input type="text" id="gesture-input" placeholder="例: 手を振りながら笑顔で話す" />
+
+      <label style="margin-top:16px;">品質設定</label>
+      <p class="hint">
+        品質を上げるほど、複数パターンを生成してAIが一番自然なものを自動で選びます。
+        <strong>費用は変わりませんが、生成時間が段階に応じて伸びます。</strong>
+      </p>
+      <div class="radio-group">
+        <label><input type="radio" name="quality-level" value="standard" checked /> 標準（候補1つ・一番速い）</label>
+        <label><input type="radio" name="quality-level" value="high" /> 高品質（候補2つから選抜・約2倍の時間）</label>
+        <label><input type="radio" name="quality-level" value="max" /> 最高品質（候補3つから選抜・約3〜4倍の時間）</label>
+      </div>
     </div>
 
     <label for="video-input" id="video-input-label" style="display:none;">動画素材</label>
