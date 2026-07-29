@@ -41,10 +41,16 @@ let inviteCode = localStorage.getItem("ccc_reel_invite_code") || "";
 // 直近のジョブIDをlocalStorageに保持し、いつでも状態だけ再確認できるようにする。
 const PENDING_JOB_KEY = "ccc_reel_pending_job";
 
-function savePendingJob(jobId, sourceType, isGesture, qualityLevel) {
+// 候補数・精度・超解像の組み合わせから、おおよその時間倍率を見積もる
+// （タイムアウト・ポーリング時間の目安に使うだけで、実際の生成ロジックには影響しない）。
+function estimateTimeMultiplier({ candidateCount, precision, upscale }) {
+  return candidateCount * (precision === "high" ? 1.75 : 1) + (upscale ? 0.5 : 0);
+}
+
+function savePendingJob(jobId, sourceType, isGesture, quality) {
   localStorage.setItem(
     PENDING_JOB_KEY,
-    JSON.stringify({ jobId, sourceType, isGesture: Boolean(isGesture), qualityLevel: qualityLevel || "standard", ts: Date.now() })
+    JSON.stringify({ jobId, sourceType, isGesture: Boolean(isGesture), quality, ts: Date.now() })
   );
 }
 function clearPendingJob() {
@@ -216,9 +222,9 @@ checkStatusBtn.addEventListener("click", async () => {
   checkStatusBtn.disabled = true;
   try {
     setStatus(generateStatus, "前回の生成状況を確認しています...");
-    const pendingQualityMultiplier = { standard: 1, high: 2, max: 3.5 }[pending.qualityLevel] || 1;
+    const pendingMultiplier = pending.quality ? estimateTimeMultiplier(pending.quality) : 1;
     const timeoutMs = pending.isGesture
-      ? POLL_TIMEOUT_MS_GESTURE * pendingQualityMultiplier
+      ? POLL_TIMEOUT_MS_GESTURE * pendingMultiplier
       : pending.sourceType === "video"
         ? POLL_TIMEOUT_MS_VIDEO
         : POLL_TIMEOUT_MS_PHOTO;
@@ -243,7 +249,11 @@ generateBtn.addEventListener("click", async () => {
   const customVoiceId = isCustomVoice ? voiceChoice.split(":")[1] : undefined;
   const stockAvatarGender = document.querySelector('input[name="stock-avatar-gender"]:checked')?.value;
   const gesturePrompt = sourceType === "photo" ? gestureInput.value.trim() : "";
-  const qualityLevel = document.querySelector('input[name="quality-level"]:checked')?.value || "standard";
+  const quality = {
+    candidateCount: Number(document.querySelector('input[name="candidate-count"]:checked')?.value || 1),
+    precision: document.querySelector('input[name="precision"]:checked')?.value || "normal",
+    upscale: document.getElementById("upscale-checkbox")?.checked || false,
+  };
 
   if (needsUpload && !file) {
     return setStatus(
@@ -280,13 +290,15 @@ generateBtn.addEventListener("click", async () => {
         customVoiceId,
         stockAvatarGender,
         gesturePrompt,
-        qualityLevel,
+        candidateCount: quality.candidateCount,
+        precision: quality.precision,
+        upscale: quality.upscale,
       }),
     });
-    savePendingJob(jobId, sourceType, Boolean(gesturePrompt), qualityLevel);
+    savePendingJob(jobId, sourceType, Boolean(gesturePrompt), quality);
     refreshPendingJobUi();
 
-    const qualityTimeoutMultiplier = { standard: 1, high: 2, max: 3.5 }[qualityLevel] || 1;
+    const qualityTimeoutMultiplier = estimateTimeMultiplier(quality);
     const timeoutMs = gesturePrompt
       ? POLL_TIMEOUT_MS_GESTURE * qualityTimeoutMultiplier
       : sourceType === "video"
