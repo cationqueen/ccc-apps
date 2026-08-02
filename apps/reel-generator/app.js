@@ -33,8 +33,11 @@ const generateStatus = document.getElementById("generate-status");
 const progressDetail = document.getElementById("progress-detail");
 const resultVideo = document.getElementById("result-video");
 const downloadLink = document.getElementById("download-link");
+const publishBtn = document.getElementById("publish-btn");
+const publishStatus = document.getElementById("publish-status");
 
 let inviteCode = localStorage.getItem("ccc_reel_invite_code") || "";
+let currentJobId = null;
 
 // 生成中にタイムアウト表示になっても、サーバー側（HeyGen）では処理が続いていて
 // 実際は完成していることが多い。そこで「再生成」で余計な課金をしないよう、
@@ -47,10 +50,10 @@ function estimateTimeMultiplier({ candidateCount, precision, upscale }) {
   return candidateCount * (precision === "high" ? 1.75 : 1) + (upscale ? 0.5 : 0);
 }
 
-function savePendingJob(jobId, sourceType, isGesture, quality) {
+function savePendingJob(jobId, sourceType, isGesture, quality, postMode) {
   localStorage.setItem(
     PENDING_JOB_KEY,
-    JSON.stringify({ jobId, sourceType, isGesture: Boolean(isGesture), quality, ts: Date.now() })
+    JSON.stringify({ jobId, sourceType, isGesture: Boolean(isGesture), quality, postMode, ts: Date.now() })
   );
 }
 function clearPendingJob() {
@@ -91,6 +94,7 @@ function showApp() {
   settingsCard.style.display = "block";
   userLabel.textContent = inviteCode;
   refreshVoiceList().catch(() => {});
+  refreshInstagramStatus().catch(() => {});
 }
 
 loginBtn.addEventListener("click", async () => {
@@ -188,7 +192,21 @@ async function pollJob(jobId, timeoutMs) {
 // <a download>は、リンク先が別ドメイン（今回はWorker側）だとブラウザに無視され、
 // ダウンロードではなく「開く」動作になってしまう。動画を一旦blobとして取得し、
 // 同一オリジン扱いのblob URLに変換することで、確実にダウンロードさせる。
-async function showResult(result) {
+// 投稿処理（コンテナ作成→処理待ち→公開）が終わるまでジョブ状態をポーリングする。
+// 自動投稿モードでは動画完成直後から、手動投稿モードでは「Instagramに投稿する」ボタン押下後に呼ぶ。
+async function pollInstagramPublish(jobId, timeoutMs = 3 * 60 * 1000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const data = await apiFetch(`/jobs/${jobId}`);
+    if (data.instagramStatus === "published") return { status: "published" };
+    if (data.instagramStatus === "error") return { status: "error", error: data.instagramError };
+    setStatus(publishStatus, "Instagramに投稿しています...");
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+  return { status: "timeout" };
+}
+
+async function showResult(result, jobId, postMode) {
   const notices = [];
   if (result.photoWarnings?.length) notices.push(...result.photoWarnings);
   if (result.naturalnessFlagged) {
@@ -214,6 +232,22 @@ async function showResult(result) {
   }
   downloadLink.setAttribute("download", "reel.mp4");
   downloadLink.style.display = "block";
+
+  setStatus(publishStatus, "");
+  if (postMode === "auto") {
+    publishBtn.style.display = "none";
+    setStatus(publishStatus, "Instagramに投稿しています...");
+    const igResult = await pollInstagramPublish(jobId);
+    if (igResult.status === "published") {
+      setStatus(publishStatus, "Instagramに投稿しました！");
+    } else if (igResult.status === "error") {
+      setStatus(publishStatus, `Instagramへの投稿に失敗しました: ${igResult.error || ""}`, true);
+    } else {
+      setStatus(publishStatus, "Instagramへの投稿処理が確認できる時間を超えました。しばらくしてページを再読み込みしてください。", true);
+    }
+  } else {
+    publishBtn.style.display = "block";
+  }
 }
 
 checkStatusBtn.addEventListener("click", async () => {
@@ -228,8 +262,9 @@ checkStatusBtn.addEventListener("click", async () => {
       : pending.sourceType === "video"
         ? POLL_TIMEOUT_MS_VIDEO
         : POLL_TIMEOUT_MS_PHOTO;
+    currentJobId = pending.jobId;
     const result = await pollJob(pending.jobId, timeoutMs);
-    await showResult(result);
+    await showResult(result, pending.jobId, pending.postMode || "manual");
   } catch (e) {
     setStatus(generateStatus, e.message, true);
   } finally {
@@ -267,6 +302,8 @@ generateBtn.addEventListener("click", async () => {
   generateBtn.disabled = true;
   resultVideo.style.display = "none";
   downloadLink.style.display = "none";
+  publishBtn.style.display = "none";
+  setStatus(publishStatus, "");
 
   try {
     let mediaUrl;
@@ -295,8 +332,9 @@ generateBtn.addEventListener("click", async () => {
         upscale: quality.upscale,
       }),
     });
-    savePendingJob(jobId, sourceType, Boolean(gesturePrompt), quality);
+    savePendingJob(jobId, sourceType, Boolean(gesturePrompt), quality, postMode);
     refreshPendingJobUi();
+    currentJobId = jobId;
 
     const qualityTimeoutMultiplier = estimateTimeMultiplier(quality);
     const timeoutMs = gesturePrompt
@@ -305,7 +343,7 @@ generateBtn.addEventListener("click", async () => {
         ? POLL_TIMEOUT_MS_VIDEO
         : POLL_TIMEOUT_MS_PHOTO;
     const result = await pollJob(jobId, timeoutMs);
-    await showResult(result);
+    await showResult(result, jobId, postMode);
   } catch (e) {
     setStatus(generateStatus, e.message, true);
     // タイムアウト以外（原稿未入力・生成失敗など）の場合は、もう completed する見込みがないので
@@ -405,5 +443,74 @@ registerVoiceBtn.addEventListener("click", async () => {
     setStatus(voiceRegisterStatus, e.message, true);
   } finally {
     registerVoiceBtn.disabled = false;
+  }
+});
+
+// Instagramアプリ ID（公開情報。Facebookアプリ全体のIDとは別物で、こちらは秘密にする必要がない）
+const INSTAGRAM_APP_ID = "1612137493666687";
+const INSTAGRAM_OAUTH_REDIRECT_URI = `${WORKER_URL}/instagram-oauth-callback`;
+
+const connectInstagramBtn = document.getElementById("connect-instagram-btn");
+const instagramConnectStatus = document.getElementById("instagram-connect-status");
+const instagramConnectedStatus = document.getElementById("instagram-connected-status");
+
+async function refreshInstagramStatus() {
+  const data = await apiFetch("/instagram-status");
+  if (data.connected) {
+    instagramConnectedStatus.textContent = `連携済み（Instagramアカウント: ${data.igUserId}）`;
+    instagramConnectedStatus.style.display = "block";
+  } else {
+    instagramConnectedStatus.style.display = "none";
+  }
+  return data;
+}
+
+connectInstagramBtn.addEventListener("click", () => {
+  if (!inviteCode) return;
+  const authorizeUrl = new URL("https://www.instagram.com/oauth/authorize");
+  authorizeUrl.searchParams.set("client_id", INSTAGRAM_APP_ID);
+  authorizeUrl.searchParams.set("redirect_uri", INSTAGRAM_OAUTH_REDIRECT_URI);
+  authorizeUrl.searchParams.set("response_type", "code");
+  authorizeUrl.searchParams.set(
+    "scope",
+    "instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages"
+  );
+  authorizeUrl.searchParams.set("state", inviteCode);
+  window.location.href = authorizeUrl.toString();
+});
+
+// Instagramログイン後、ワーカー側のコールバックからここに戻ってくる（?instagram_connected=1/0）
+(function handleInstagramOAuthReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("instagram_connected")) return;
+  const ok = params.get("instagram_connected") === "1";
+  const message = params.get("instagram_message");
+  window.history.replaceState({}, "", window.location.pathname);
+  if (ok) {
+    setStatus(instagramConnectStatus, "連携しました。");
+  } else {
+    setStatus(instagramConnectStatus, message || "Instagram連携に失敗しました", true);
+  }
+})();
+
+publishBtn.addEventListener("click", async () => {
+  if (!currentJobId) return;
+  publishBtn.disabled = true;
+  try {
+    setStatus(publishStatus, "Instagramへの投稿を開始しています...");
+    await apiFetch(`/jobs/${currentJobId}/publish`, { method: "POST" });
+    const igResult = await pollInstagramPublish(currentJobId);
+    if (igResult.status === "published") {
+      setStatus(publishStatus, "Instagramに投稿しました！");
+      publishBtn.style.display = "none";
+    } else if (igResult.status === "error") {
+      setStatus(publishStatus, `Instagramへの投稿に失敗しました: ${igResult.error || ""}`, true);
+    } else {
+      setStatus(publishStatus, "Instagramへの投稿処理が確認できる時間を超えました。しばらくしてページを再読み込みしてください。", true);
+    }
+  } catch (e) {
+    setStatus(publishStatus, e.message, true);
+  } finally {
+    publishBtn.disabled = false;
   }
 });

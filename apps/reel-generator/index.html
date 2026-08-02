@@ -103,9 +103,12 @@
     </p>
 
     <label>投稿方法</label>
+    <p class="hint" id="post-mode-hint">
+      自動投稿には、下の「設定」からInstagram連携が必要です。
+    </p>
     <div class="radio-group">
       <label><input type="radio" name="post-mode" value="manual" checked /> 手動投稿（動画をダウンロード）</label>
-      <label><input type="radio" name="post-mode" value="auto" disabled /> 自動投稿（Instagram連携・近日公開）</label>
+      <label><input type="radio" name="post-mode" value="auto" /> 自動投稿（完成後にInstagramへ自動投稿）</label>
     </div>
 
     <button id="generate-btn">動画を生成する</button>
@@ -117,6 +120,8 @@
     <a id="download-link" href="#" download style="display:none;">
       <button style="margin-top:12px;">動画をダウンロード</button>
     </a>
+    <button id="publish-btn" style="display:none; margin-top:12px;">Instagramに投稿する</button>
+    <p id="publish-status" class="status"></p>
   </section>
 
   <section id="settings-card" class="card" style="display:none;">
@@ -139,6 +144,17 @@
     <input type="file" id="voice-sample-input" accept="video/mp4,video/quicktime" />
     <button id="register-voice-btn">声を登録する</button>
     <p id="voice-register-status" class="status"></p>
+
+    <label style="margin-top:24px;">Instagramと連携する</label>
+    <p class="hint">
+      ボタンを押すとInstagramのログイン画面に移動します。ご自身のアカウントでログインして許可するだけで連携が完了します
+      （パスワードなどはこちらのアプリには渡りません）。
+      連携すると、「自動投稿」を選んで動画を生成した際に、完成後そのままInstagramへ投稿されます。
+      手動投稿を選んだ場合も、完成後に「Instagramに投稿する」ボタンから手動で投稿できます。
+    </p>
+    <p id="instagram-connected-status" class="hint" style="display:none;"></p>
+    <button id="connect-instagram-btn">Instagramでログインして連携する</button>
+    <p id="instagram-connect-status" class="status"></p>
   </section>
 </main>
 
