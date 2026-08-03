@@ -5,6 +5,7 @@ const POLL_INTERVAL_MS = 4000;
 const POLL_TIMEOUT_MS_PHOTO = 8 * 60 * 1000; // 原稿が長いとHeyGen側のレンダリングが5分を超えることがあるため余裕を持たせる
 const POLL_TIMEOUT_MS_VIDEO = 15 * 60 * 1000; // 動画素材はアバター学習が長くなるため余裕を持たせる
 const POLL_TIMEOUT_MS_GESTURE = 60 * 60 * 1000; // 振り付け（ローカルWan2.2）は数十分〜1時間かかることがある
+const POLL_TIMEOUT_MS_SLIDESHOW = 3 * 60 * 1000; // 文字スライドショーは同期生成のためすぐ終わるが念のため余裕を持たせる
 
 const loginCard = document.getElementById("login-card");
 const appCard = document.getElementById("app-card");
@@ -26,6 +27,12 @@ const stockInputLabel = document.getElementById("stock-input-label");
 const stockInputHint = document.getElementById("stock-input-hint");
 const gestureInputWrap = document.getElementById("gesture-input-wrap");
 const gestureInput = document.getElementById("gesture-input");
+const backgroundInputWrap = document.getElementById("background-input-wrap");
+const backgroundSolidWrap = document.getElementById("background-solid-wrap");
+const backgroundGradientWrap = document.getElementById("background-gradient-wrap");
+const backgroundPatternWrap = document.getElementById("background-pattern-wrap");
+const backgroundImageWrap = document.getElementById("background-image-wrap");
+const backgroundImageInput = document.getElementById("background-image-input");
 const scriptInput = document.getElementById("script-input");
 const generateBtn = document.getElementById("generate-btn");
 const checkStatusBtn = document.getElementById("check-status-btn");
@@ -127,6 +134,7 @@ document.querySelectorAll('input[name="source-type"]').forEach((radio) => {
     const showPhoto = type === "photo";
     const showVideo = type === "video";
     const showStock = type === "stock";
+    const showBackground = type === "text_slideshow";
     photoInputLabel.style.display = showPhoto ? "block" : "none";
     photoInputHint.style.display = showPhoto ? "block" : "none";
     photoInput.style.display = showPhoto ? "block" : "none";
@@ -137,7 +145,22 @@ document.querySelectorAll('input[name="source-type"]').forEach((radio) => {
     stockInputHint.style.display = showStock ? "block" : "none";
     stockInput.style.display = showStock ? "flex" : "none";
     gestureInputWrap.style.display = showPhoto ? "block" : "none";
+    backgroundInputWrap.style.display = showBackground ? "block" : "none";
     // my_avatar は追加の入力欄が不要（登録済みのIDをそのまま使う）
+  });
+});
+
+function currentBackgroundType() {
+  return document.querySelector('input[name="background-type"]:checked').value;
+}
+
+document.querySelectorAll('input[name="background-type"]').forEach((radio) => {
+  radio.addEventListener("change", () => {
+    const type = currentBackgroundType();
+    backgroundSolidWrap.style.display = type === "solid" ? "flex" : "none";
+    backgroundGradientWrap.style.display = type === "gradient" ? "flex" : "none";
+    backgroundPatternWrap.style.display = type === "pattern" ? "flex" : "none";
+    backgroundImageWrap.style.display = type === "image" ? "block" : "none";
   });
 });
 
@@ -290,12 +313,19 @@ generateBtn.addEventListener("click", async () => {
     upscale: document.getElementById("upscale-checkbox")?.checked || false,
   };
 
+  const isSlideshow = sourceType === "text_slideshow";
+  const backgroundType = isSlideshow ? currentBackgroundType() : null;
+  const backgroundImageFile = isSlideshow && backgroundType === "image" ? backgroundImageInput.files[0] : null;
+
   if (needsUpload && !file) {
     return setStatus(
       generateStatus,
       sourceType === "video" ? "動画をアップロードしてください" : "顔写真をアップロードしてください",
       true
     );
+  }
+  if (isSlideshow && backgroundType === "image" && !backgroundImageFile) {
+    return setStatus(generateStatus, "背景にする画像をアップロードしてください", true);
   }
   if (!script) return setStatus(generateStatus, "原稿を入力してください", true);
 
@@ -307,13 +337,36 @@ generateBtn.addEventListener("click", async () => {
 
   try {
     let mediaUrl;
-    if (!needsUpload) {
+    let backgroundImageUrl;
+    if (isSlideshow) {
+      setStatus(generateStatus, "音声・動画の生成を開始しています...");
+      if (backgroundImageFile) {
+        setStatus(generateStatus, "背景画像をアップロードしています...");
+        backgroundImageUrl = await uploadMedia(backgroundImageFile);
+        setStatus(generateStatus, "音声・動画の生成を開始しています...");
+      }
+    } else if (!needsUpload) {
       setStatus(generateStatus, "音声・動画の生成を開始しています...");
     } else {
       setStatus(generateStatus, sourceType === "video" ? "動画をアップロードしています...(サイズによっては時間がかかります)" : "写真をアップロードしています...");
       mediaUrl = await uploadMedia(file);
       setStatus(generateStatus, "音声・動画の生成を開始しています...");
     }
+
+    const background = isSlideshow
+      ? {
+          type: backgroundType,
+          value:
+            backgroundType === "solid"
+              ? document.querySelector('input[name="background-solid"]:checked').value
+              : backgroundType === "gradient"
+                ? document.querySelector('input[name="background-gradient"]:checked').value
+                : backgroundType === "pattern"
+                  ? document.querySelector('input[name="background-pattern"]:checked').value
+                  : undefined,
+          imageUrl: backgroundType === "image" ? backgroundImageUrl : undefined,
+        }
+      : undefined;
 
     const { jobId } = await apiFetch("/generate", {
       method: "POST",
@@ -330,6 +383,7 @@ generateBtn.addEventListener("click", async () => {
         candidateCount: quality.candidateCount,
         precision: quality.precision,
         upscale: quality.upscale,
+        background,
       }),
     });
     savePendingJob(jobId, sourceType, Boolean(gesturePrompt), quality, postMode);
@@ -337,11 +391,13 @@ generateBtn.addEventListener("click", async () => {
     currentJobId = jobId;
 
     const qualityTimeoutMultiplier = estimateTimeMultiplier(quality);
-    const timeoutMs = gesturePrompt
-      ? POLL_TIMEOUT_MS_GESTURE * qualityTimeoutMultiplier
-      : sourceType === "video"
-        ? POLL_TIMEOUT_MS_VIDEO
-        : POLL_TIMEOUT_MS_PHOTO;
+    const timeoutMs = isSlideshow
+      ? POLL_TIMEOUT_MS_SLIDESHOW
+      : gesturePrompt
+        ? POLL_TIMEOUT_MS_GESTURE * qualityTimeoutMultiplier
+        : sourceType === "video"
+          ? POLL_TIMEOUT_MS_VIDEO
+          : POLL_TIMEOUT_MS_PHOTO;
     const result = await pollJob(jobId, timeoutMs);
     await showResult(result, jobId, postMode);
   } catch (e) {

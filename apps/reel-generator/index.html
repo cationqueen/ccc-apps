@@ -34,6 +34,7 @@
       <label><input type="radio" name="source-type" value="video" /> 動画</label>
       <label><input type="radio" name="source-type" value="stock" /> プロアバター（顔出し不要）</label>
       <label><input type="radio" name="source-type" value="my_avatar" /> 自分のアバター（登録済み）</label>
+      <label><input type="radio" name="source-type" value="text_slideshow" /> 文字スライドショー（顔出し・写真不要）</label>
     </div>
 
     <label for="photo-input" id="photo-input-label">顔写真（1枚）</label>
@@ -79,6 +80,41 @@
     <label for="video-input" id="video-input-label" style="display:none;">動画素材</label>
     <p class="hint" id="video-input-hint" style="display:none;">ご自身が写っている動画をアップロードしてください（15秒〜10分、100MBまで）。アバターの学習に写真より時間がかかります。</p>
     <input type="file" id="video-input" accept="video/mp4,video/quicktime" style="display:none;" />
+
+    <div id="background-input-wrap" style="display:none;">
+      <label>背景の種類</label>
+      <p class="hint">原稿の文字が背景の上に音声に合わせて表示されます。アバターは出ません。</p>
+      <div class="radio-group">
+        <label><input type="radio" name="background-type" value="solid" checked /> 単色</label>
+        <label><input type="radio" name="background-type" value="gradient" /> グラデーション</label>
+        <label><input type="radio" name="background-type" value="pattern" /> パターン（放射状）</label>
+        <label><input type="radio" name="background-type" value="image" /> 画像をアップロード</label>
+      </div>
+
+      <div id="background-solid-wrap" class="radio-group" style="margin-top:8px;">
+        <label><input type="radio" name="background-solid" value="#1a2b6d" checked /> 紺色</label>
+        <label><input type="radio" name="background-solid" value="#000000" /> 黒</label>
+        <label><input type="radio" name="background-solid" value="#ffffff" /> 白</label>
+        <label><input type="radio" name="background-solid" value="#c0392b" /> 赤</label>
+        <label><input type="radio" name="background-solid" value="#1e8449" /> 緑</label>
+      </div>
+
+      <div id="background-gradient-wrap" class="radio-group" style="display:none; margin-top:8px;">
+        <label><input type="radio" name="background-gradient" value="sunset" checked /> 夕焼け（オレンジ→ピンク）</label>
+        <label><input type="radio" name="background-gradient" value="ocean" /> 海（青→水色）</label>
+        <label><input type="radio" name="background-gradient" value="dusk" /> 黄昏（紫→深緑）</label>
+      </div>
+
+      <div id="background-pattern-wrap" class="radio-group" style="display:none; margin-top:8px;">
+        <label><input type="radio" name="background-pattern" value="sunset" checked /> 夕焼け（放射状）</label>
+        <label><input type="radio" name="background-pattern" value="ocean" /> 海（放射状）</label>
+        <label><input type="radio" name="background-pattern" value="dusk" /> 黄昏（放射状）</label>
+      </div>
+
+      <div id="background-image-wrap" style="display:none; margin-top:8px;">
+        <input type="file" id="background-image-input" accept="image/jpeg,image/png" />
+      </div>
+    </div>
 
     <label id="stock-input-label" style="display:none;">プロアバターの性別</label>
     <p class="hint" id="stock-input-hint" style="display:none;">顔出しせずに、プロが撮影した既製アバターで動画を作れます。アップロード不要です。</p>
