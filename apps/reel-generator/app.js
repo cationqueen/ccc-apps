@@ -5,7 +5,6 @@ const POLL_INTERVAL_MS = 4000;
 const POLL_TIMEOUT_MS_PHOTO = 8 * 60 * 1000; // 原稿が長いとHeyGen側のレンダリングが5分を超えることがあるため余裕を持たせる
 const POLL_TIMEOUT_MS_VIDEO = 15 * 60 * 1000; // 動画素材はアバター学習が長くなるため余裕を持たせる
 const POLL_TIMEOUT_MS_GESTURE = 60 * 60 * 1000; // 振り付け（ローカルWan2.2）は数十分〜1時間かかることがある
-const POLL_TIMEOUT_MS_SLIDESHOW = 3 * 60 * 1000; // 文字スライドショーは同期生成のためすぐ終わるが念のため余裕を持たせる
 
 const loginCard = document.getElementById("login-card");
 const appCard = document.getElementById("app-card");
@@ -368,7 +367,7 @@ generateBtn.addEventListener("click", async () => {
         }
       : undefined;
 
-    const { jobId } = await apiFetch("/generate", {
+    const { jobId, slideshow } = await apiFetch("/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -386,19 +385,53 @@ generateBtn.addEventListener("click", async () => {
         background,
       }),
     });
-    savePendingJob(jobId, sourceType, Boolean(gesturePrompt), quality, postMode);
-    refreshPendingJobUi();
     currentJobId = jobId;
 
-    const qualityTimeoutMultiplier = estimateTimeMultiplier(quality);
-    const timeoutMs = isSlideshow
-      ? POLL_TIMEOUT_MS_SLIDESHOW
-      : gesturePrompt
+    let result;
+    if (isSlideshow) {
+      // 文字スライドショーはCloud Runの実行時間制限をそのまま活かすため、
+      // Cloudflare Workerを経由せずブラウザから直接media-serviceを呼んで完了まで待つ
+      // （原稿が長いと数分かかることがあるが、ここではタイムアウトの心配はない）。
+      setStatus(generateStatus, "文字スライドショーを生成しています...(原稿が長いと数分かかることがあります)");
+      try {
+        const genRes = await fetch(`${slideshow.mediaServiceUrl}/text-slideshow`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            audioUrl: slideshow.audioUrl,
+            captions: slideshow.captions,
+            background: slideshow.background,
+          }),
+        });
+        if (!genRes.ok) {
+          const detail = await genRes.text().catch(() => "");
+          throw new Error(`文字スライドショーの生成に失敗しました (${genRes.status}) ${detail}`);
+        }
+        const videoBlob = await genRes.blob();
+        result = await apiFetch(`/jobs/${jobId}/complete-slideshow`, {
+          method: "POST",
+          headers: { "Content-Type": "video/mp4" },
+          body: videoBlob,
+        });
+      } catch (e) {
+        await apiFetch(`/jobs/${jobId}/fail`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ error: e.message }),
+        }).catch(() => {});
+        throw e;
+      }
+    } else {
+      savePendingJob(jobId, sourceType, Boolean(gesturePrompt), quality, postMode);
+      refreshPendingJobUi();
+      const qualityTimeoutMultiplier = estimateTimeMultiplier(quality);
+      const timeoutMs = gesturePrompt
         ? POLL_TIMEOUT_MS_GESTURE * qualityTimeoutMultiplier
         : sourceType === "video"
           ? POLL_TIMEOUT_MS_VIDEO
           : POLL_TIMEOUT_MS_PHOTO;
-    const result = await pollJob(jobId, timeoutMs);
+      result = await pollJob(jobId, timeoutMs);
+    }
     await showResult(result, jobId, postMode);
   } catch (e) {
     setStatus(generateStatus, e.message, true);
