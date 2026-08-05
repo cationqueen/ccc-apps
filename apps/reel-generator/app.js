@@ -6,6 +6,22 @@ const POLL_TIMEOUT_MS_PHOTO = 8 * 60 * 1000; // 原稿が長いとHeyGen側の�
 const POLL_TIMEOUT_MS_VIDEO = 15 * 60 * 1000; // 動画素材はアバター学習が長くなるため余裕を持たせる
 const POLL_TIMEOUT_MS_GESTURE = 60 * 60 * 1000; // 振り付け（ローカルWan2.2）は数十分〜1時間かかることがある
 
+// Cloud Run（media-service）はしばらく使われないと停止しており、いきなり重い処理を投げると
+// 起動が間に合わず504になることがある。先にこの軽い/healthで起動完了を待ってから本番を送る。
+async function warmUpMediaService(mediaServiceUrl, timeoutMs = 40000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(`${mediaServiceUrl}/health`);
+      if (res.ok) return;
+    } catch {
+      // 起動完了まではエラーになることがある。想定内なので無視して待ち続ける
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  // 起動確認ができなくても、本番リクエスト側の再試行に任せて先に進む
+}
+
 const loginCard = document.getElementById("login-card");
 const appCard = document.getElementById("app-card");
 const settingsCard = document.getElementById("settings-card");
@@ -392,10 +408,14 @@ generateBtn.addEventListener("click", async () => {
       // 文字スライドショーはCloud Runの実行時間制限をそのまま活かすため、
       // Cloudflare Workerを経由せずブラウザから直接media-serviceを呼んで完了まで待つ
       // （原稿が長いと数分かかることがあるが、ここではタイムアウトの心配はない）。
-      setStatus(generateStatus, "文字スライドショーを生成しています...(原稿が長いと数分かかることがあります)");
       try {
-        // Cloud Runがしばらく使われていないと一旦停止しており、起動し直す瞬間（コールドスタート）に
-        // まれに504等で失敗することがある。一時的なものなので、失敗したら少し待って1回だけ再試行する。
+        // Cloud Runはしばらく使われないと一旦停止しており、いきなり重い処理（動画生成）を
+        // 投げると起動が間に合わず504になることがある（実際に確認済み）。
+        // そこで先に軽い/healthを送って起動完了を待ってから、本番の生成を送る。
+        setStatus(generateStatus, "サーバーを起動しています...");
+        await warmUpMediaService(slideshow.mediaServiceUrl);
+
+        setStatus(generateStatus, "文字スライドショーを生成しています...(原稿が長いと数分かかることがあります)");
         const MAX_ATTEMPTS = 2;
         let genRes;
         for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
