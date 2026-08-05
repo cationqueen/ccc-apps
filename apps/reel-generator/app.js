@@ -394,16 +394,32 @@ generateBtn.addEventListener("click", async () => {
       // （原稿が長いと数分かかることがあるが、ここではタイムアウトの心配はない）。
       setStatus(generateStatus, "文字スライドショーを生成しています...(原稿が長いと数分かかることがあります)");
       try {
-        const genRes = await fetch(`${slideshow.mediaServiceUrl}/text-slideshow`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            audioUrl: slideshow.audioUrl,
-            captions: slideshow.captions,
-            background: slideshow.background,
-          }),
-        });
-        if (!genRes.ok) {
+        // Cloud Runがしばらく使われていないと一旦停止しており、起動し直す瞬間（コールドスタート）に
+        // まれに504等で失敗することがある。一時的なものなので、失敗したら少し待って1回だけ再試行する。
+        const MAX_ATTEMPTS = 2;
+        let genRes;
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          try {
+            genRes = await fetch(`${slideshow.mediaServiceUrl}/text-slideshow`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                audioUrl: slideshow.audioUrl,
+                captions: slideshow.captions,
+                background: slideshow.background,
+              }),
+            });
+          } catch (fetchErr) {
+            genRes = null;
+          }
+          if (genRes && genRes.ok) break;
+          const isServerSideError = !genRes || genRes.status >= 500;
+          if (attempt < MAX_ATTEMPTS && isServerSideError) {
+            setStatus(generateStatus, "サーバーの起動待ちのため再試行しています...");
+            await new Promise((r) => setTimeout(r, 5000));
+            continue;
+          }
+          if (!genRes) throw new Error("文字スライドショーの生成に失敗しました（通信エラー）");
           const detail = await genRes.text().catch(() => "");
           throw new Error(`文字スライドショーの生成に失敗しました (${genRes.status}) ${detail}`);
         }
