@@ -33,7 +33,7 @@
       <label><input type="radio" name="source-type" value="photo" checked /> 写真</label>
       <label><input type="radio" name="source-type" value="video" /> 動画</label>
       <label><input type="radio" name="source-type" value="stock" /> プロアバター（顔出し不要）</label>
-      <label><input type="radio" name="source-type" value="my_avatar" /> 自分のアバター（登録済み）</label>
+      <label style="display:none"><input type="radio" name="source-type" value="my_avatar" /> 自分のアバター（登録済み）</label>
       <label><input type="radio" name="source-type" value="text_slideshow" /> 文字スライドショー（顔出し・写真不要）</label>
     </div>
 
@@ -162,15 +162,17 @@
   </section>
 
   <section id="settings-card" class="card" style="display:none;">
-    <label>自分のアバターを登録</label>
-    <p class="hint">
-      HeyGenのサイト(app.heygen.com)で、ご自身の動画から「動画アバター(digital twin)」を作成し、
-      同意動画の録画まで済ませてください。できあがったアバターIDをここに貼り付けると、
-      「自分のアバター」として選べるようになります。
-    </p>
-    <input type="text" id="avatar-id-input" placeholder="HeyGenのアバターID" />
-    <button id="register-avatar-btn">アバターを登録する</button>
-    <p id="avatar-register-status" class="status"></p>
+    <div style="display:none;">
+      <label>自分のアバターを登録</label>
+      <p class="hint">
+        HeyGenのサイト(app.heygen.com)で、ご自身の動画から「動画アバター(digital twin)」を作成し、
+        同意動画の録画まで済ませてください。できあがったアバターIDをここに貼り付けると、
+        「自分のアバター」として選べるようになります。
+      </p>
+      <input type="text" id="avatar-id-input" placeholder="HeyGenのアバターID" />
+      <button id="register-avatar-btn">アバターを登録する</button>
+      <p id="avatar-register-status" class="status"></p>
+    </div>
 
     <label style="margin-top:24px;">声を登録（ボイスクローン）</label>
     <p class="hint">
