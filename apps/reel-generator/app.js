@@ -511,8 +511,9 @@ const registerVoiceBtn = document.getElementById("register-voice-btn");
 const voiceRegisterStatus = document.getElementById("voice-register-status");
 const customVoiceList = document.getElementById("custom-voice-list");
 const customVoiceEmptyHint = document.getElementById("custom-voice-empty-hint");
+const voiceManageList = document.getElementById("voice-manage-list");
 
-// 登録済みの声を一覧取得し、生成画面の選択肢（ラジオボタン）として描画する
+// 登録済みの声を一覧取得し、生成画面の選択肢（ラジオボタン）と設定画面の管理一覧（削除ボタン付き）を描画する
 async function refreshVoiceList() {
   const data = await apiFetch("/voice-status");
   const voices = data.voices || [];
@@ -529,6 +530,30 @@ async function refreshVoiceList() {
     label.appendChild(document.createTextNode(` ${v.label}`));
     customVoiceList.appendChild(label);
   }
+
+  voiceManageList.innerHTML = "";
+  for (const v of voices) {
+    const row = document.createElement("div");
+    row.style.margin = "4px 0";
+    const statusLabel = v.status === "complete" ? "" : v.status === "error" ? "（失敗）" : "（作成中）";
+    row.appendChild(document.createTextNode(`${v.label}${statusLabel} `));
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "削除";
+    delBtn.addEventListener("click", async () => {
+      if (!confirm(`「${v.label}」を削除しますか？`)) return;
+      delBtn.disabled = true;
+      try {
+        await apiFetch(`/voice/${v.id}`, { method: "DELETE" });
+        await refreshVoiceList();
+      } catch (e) {
+        setStatus(voiceRegisterStatus, e.message, true);
+        delBtn.disabled = false;
+      }
+    });
+    row.appendChild(delBtn);
+    voiceManageList.appendChild(row);
+  }
+
   return voices;
 }
 
