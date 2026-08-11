@@ -215,7 +215,16 @@ function showProgress(data) {
 async function pollJob(jobId, timeoutMs) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const data = await apiFetch(`/jobs/${jobId}`);
+    let data;
+    try {
+      data = await apiFetch(`/jobs/${jobId}`);
+    } catch (e) {
+      // スマホの画面ロックや電波の瞬断でこの確認通信だけが失敗することがある。
+      // 生成自体は裏側（サーバー側）で続いているため、ここで諦めず待って再試行する。
+      setStatus(generateStatus, "通信が不安定なため再試行しています...");
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      continue;
+    }
     if (data.status === "done") return data;
     if (data.status === "error") throw new Error(data.error || "動画生成に失敗しました");
     setStatus(generateStatus, "動画を生成しています...(素材が動画の場合は特に時間がかかります)");
@@ -235,7 +244,14 @@ async function pollJob(jobId, timeoutMs) {
 async function pollInstagramPublish(jobId, timeoutMs = 3 * 60 * 1000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const data = await apiFetch(`/jobs/${jobId}`);
+    let data;
+    try {
+      data = await apiFetch(`/jobs/${jobId}`);
+    } catch (e) {
+      setStatus(publishStatus, "通信が不安定なため再試行しています...");
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      continue;
+    }
     if (data.instagramStatus === "published") return { status: "published" };
     if (data.instagramStatus === "error") return { status: "error", error: data.instagramError };
     setStatus(publishStatus, "Instagramに投稿しています...");
